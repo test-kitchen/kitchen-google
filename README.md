@@ -109,9 +109,11 @@ suites:
 Source is hosted on [GitHub](https://github.com/anl/kitchen-gce).
 
 * Pull requests are welcome, using topic branches if possible:
+
 1. Fork the repo.
 2. Create a feature branch, commit changes to it and push them.
 3. Submit a pull request.
+
 * Report issues or submit feature requests on [GitHub](https://github.com/anl/kitchen-gce/issues)
 
 ## Author, Acknowledgements, Etc.
