@@ -12,4 +12,5 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'test-kitchen', '~> 1.0.0.beta.3'
   s.add_dependency 'fog', '>= 1.11.0'
+  s.add_dependency 'google-api-client'
 end
