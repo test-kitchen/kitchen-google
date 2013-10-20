@@ -1,6 +1,6 @@
 # Kitchen::Gce - A Test Kitchen Driver for Google Compute Engine
 
-This is a (Test Kitchen)[https://github.com/opscode/test-kitchen/]
+This is a [Test Kitchen](https://github.com/opscode/test-kitchen/)
 driver for Google Compute Engine.  While similar to EC2 and other IaaS
 providers, GCE has a couple of advantages for Chef cookbook testing:
 
@@ -9,18 +9,18 @@ providers, GCE has a couple of advantages for Chef cookbook testing:
 
 ## Requirements
 
-A (Google Cloud Platform)[https://cloud.google.com] account is
+A [Google Cloud Platform](https://cloud.google.com) account is
 required.  If you do not already have an appropriate "project" in
 which to run your test-kitchen instances, create one, noting the
-"project id".  Then, within the (Google API
-Console)[https://code.google.com/apis/console/], create a "service
+"project id".  Then, within the [Google API
+Console](https://code.google.com/apis/console/), create a "service
 account" for the project under the "API Access" tab.  Save the key
 file, and note the email address associated with the service account
 (e.g. <number>@developer.gserviceaccount.com - not the project owner's
 email address).
 
-If you have not (set up SSH keys for your GCE
-environment)[https://developers.google.com/compute/docs/instances#sshkeys],
+If you have not [set up SSH keys for your GCE
+environment](https://developers.google.com/compute/docs/instances#sshkeys),
 you must also do that prior to using kitchen-gce.
 
 ## Installation
@@ -106,21 +106,21 @@ suites:
 
 ## Development
 
-Source is hosted on (GitHub)[https://github.com/anl/kitchen-gce].
+Source is hosted on [GitHub](https://github.com/anl/kitchen-gce).
 
 * Pull requests are welcome, using topic branches if possible:
 1. Fork the repo.
 2. Create a feature branch, commit changes to it and push them.
 3. Submit a pull request.
-* Report issues or submit feature requests on (GitHub)[https://github.com/anl/kitchen-gce/issues]
+* Report issues or submit feature requests on [GitHub](https://github.com/anl/kitchen-gce/issues)
 
 ## Author, Acknowledgements, Etc.
 
-Created and maintained by (Andrew Leonard)[http://andyleonard.com]
-((andy@hurricane-ridge.com)[mailto:andy@hurricane-ridge.com]).
+Created and maintained by [Andrew Leonard](http://andyleonard.com)
+([andy@hurricane-ridge.com](mailto:andy@hurricane-ridge.com)).
 
 The initial implementation drew heavily on the
-(kitchen-ec2)[https://github.com/opscode/kitchen-ec2/] gem for both
+[kitchen-ec2](https://github.com/opscode/kitchen-ec2/) gem for both
 inspiration and implementation details.  Any bugs, however, are solely
 the author's own fault.
 
