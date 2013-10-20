@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'kitchen-gce'
-  s.version     = '0.0.0'
+  s.version     = '0.0.1'
   s.date        = '2013-10-20'
   s.summary     = 'Kitchen::Driver::Gce'
   s.description = 'A Test-Kitchen driver for Google Compute Engine'
