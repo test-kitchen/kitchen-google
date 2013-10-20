@@ -25,7 +25,7 @@ module Kitchen
       default_config :machine_type,  'n1-standard-1'
       default_config :name,          "test-kitchen-#{Time.now.to_i}"
       default_config :username,      ENV['USER']
-      default_config :zone_name,     'us-central-1b'
+      default_config :zone_name,     'us-central1-b'
 
       required_config :google_client_email
       required_config :google_key_location
