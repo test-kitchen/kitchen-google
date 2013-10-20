@@ -18,8 +18,8 @@ which to run your test-kitchen instances, create one, noting the
 Console](https://code.google.com/apis/console/), create a "service
 account" for the project under the "API Access" tab.  Save the key
 file, and note the email address associated with the service account
-(e.g. <number>@developer.gserviceaccount.com - not the project owner's
-email address).
+(e.g. 123456789012@developer.gserviceaccount.com - not the project
+owner's email address).
 
 If you have not [set up SSH keys for your GCE
 environment](https://developers.google.com/compute/docs/instances#sshkeys),
