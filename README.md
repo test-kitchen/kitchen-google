@@ -86,6 +86,9 @@ Location into which instances will be launched.  Default: `us-central1-b`
 
 ## Example
 
+An example `.kitchen.yml` file using kitchen-gce might look something
+like this:
+
 ```ruby
 ---
 driver_plugin: gce
