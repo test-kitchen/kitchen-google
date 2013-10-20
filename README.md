@@ -1,5 +1,7 @@
 # Kitchen::Gce - A Test Kitchen Driver for Google Compute Engine
 
+[![Code Climate](https://codeclimate.com/github/anl/kitchen-gce.png)](https://codeclimate.com/github/anl/kitchen-gce)
+
 This is a [Test Kitchen](https://github.com/opscode/test-kitchen/)
 driver for Google Compute Engine.  While similar to EC2 and other IaaS
 providers, GCE has a couple of advantages for Chef cookbook testing:
