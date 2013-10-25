@@ -97,7 +97,7 @@ module Kitchen
               raise ArgumentError, 'Unknown area'
             end
           end
-          return zones.sample
+          return zones.sample.name
         else
           return config[:zone_name]
         end
