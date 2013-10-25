@@ -22,10 +22,11 @@ module Kitchen
   module Driver
     class Gce < Kitchen::Driver::SSHBase
 
+      default_config :area,          'us'
       default_config :machine_type,  'n1-standard-1'
       default_config :name,          "test-kitchen-#{Time.now.to_i}"
       default_config :username,      ENV['USER']
-      default_config :zone_name,     'us-central1-b'
+      default_config :zone_name,     nil
 
       required_config :google_client_email
       required_config :google_key_location
@@ -71,8 +72,35 @@ module Kitchen
           :name         => config[:name],
           :image_name   => config[:image_name],
           :machine_type => config[:machine_type],
-          :zone_name    => config[:zone_name],
+          :zone_name    => get_zone,
         })
+      end
+
+      def get_zone
+        if config[:zone_name].nil?
+          zones = []
+          connection.zones.each do z
+            case config[:area]
+            when 'us'
+              if z.name.match(/^us/) and z.status == 'UP'
+                zones.push(z)
+              end
+            when 'europe'
+              if z.name.match(/^europe/) and z.status == 'UP'
+                zones.push(z)
+              end
+            when 'any'
+              if z.status == 'UP'
+                zones.push(z)
+              end
+            else
+              raise ArgumentError, 'Unknown area'
+            end
+          end
+          return zones.sample
+        else
+          return config[:zone_name]
+        end
       end
 
     end
