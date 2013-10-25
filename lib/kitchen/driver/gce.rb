@@ -79,7 +79,7 @@ module Kitchen
       def get_zone
         if config[:zone_name].nil?
           zones = []
-          connection.zones.each do z
+          connection.zones.each do |z|
             case config[:area]
             when 'us'
               if z.name.match(/^us/) and z.status == 'UP'
