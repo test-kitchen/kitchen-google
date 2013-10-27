@@ -15,6 +15,7 @@
 # limitations under the License.
 
 require 'fog'
+require 'securerandom'
 
 require 'kitchen'
 
@@ -24,7 +25,7 @@ module Kitchen
 
       default_config :area,          'us'
       default_config :machine_type,  'n1-standard-1'
-      default_config :name,          "test-kitchen-#{Time.now.to_i}"
+      default_config :name,          nil
       default_config :username,      ENV['USER']
       default_config :zone_name,     nil
 
@@ -34,7 +35,8 @@ module Kitchen
       required_config :image_name
 
       def create(state)
-        server= create_instance
+        config[:name] ||= generate_name
+        server = create_instance
         state[:server_id] = server.identity
 
         info("GCE instance <#{state[:server_id]}> created.")
@@ -101,6 +103,12 @@ module Kitchen
         else
           return config[:zone_name]
         end
+      end
+
+      def generate_name
+        # Inspired by generate_name from kitchen-rackspace
+        base_name = instance.name[0..26] # UUID is 36 chars, max name length 63
+        "#{base_name}-#{SecureRandom.uuid}"
       end
 
     end
