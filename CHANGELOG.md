@@ -1,7 +1,7 @@
 ### Bug fixes
 
 * In GCE, instance names must be unique; derive by default from
-  <suite>-<platform> and a UUID.
+  `<suite>-<platform>` and a UUID.
 * README formatting fixes.
 
 ### Improvements
