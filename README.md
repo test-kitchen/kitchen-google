@@ -82,7 +82,7 @@ GCE instance type (size) to launch; default: `n1-standard-1`
 ### name
 
 Name to give to instance; unlike EC2's "Name" tag, this is used as an
-instance identifier and must be unique; if none is specified, a unique
+instance identifier and must be unique.  If none is specified, a unique
 name will be auto-generated; note that auto-generated names must be
 used if there is more than one test suite.  Default:
 `<suite>-<platform>-<UUID>`
