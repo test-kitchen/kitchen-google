@@ -45,6 +45,16 @@ Then, execute `bundle install`.
 
 ## Configuration
 
+### area
+
+Area in which to launch instances.  For the purposes of this driver,
+"area" is defined as the part prior to the first hyphen in an
+availability zone's name; e.g. in "us-central1-b", the area is "us".
+Specifying area but not "zone_name" allows kitchen-gce to avoid
+launching instances into a zone that is down for maintenance.  If
+"any" is specified, kitchen-gce will select a zone from all areas.
+Default: `us` (lowest cost area); valid values: `any`, `europe`, `us`
+
 ### google_client_email
 
 **Required** Email address associated with your GCE service account.
@@ -72,8 +82,10 @@ GCE instance type (size) to launch; default: `n1-standard-1`
 ### name
 
 Name to give to instance; unlike EC2's "Name" tag, this is used as an
-instance identifier and must be unique.  Default:
-`test-kitchen-#{Time.now.to_i}`
+instance identifier and must be unique; if none is specified, a unique
+name will be auto-generated; note that auto-generated names must be
+used if there is more than one test suite.  Default:
+`<suite>-<platform>-<UUID>`
 
 ### username
 
@@ -82,7 +94,8 @@ to the appropriate SSH keys.  Default: `ENV['USER']`
 
 ### zone_name
 
-Location into which instances will be launched.  Default: `us-central1-b`
+Location into which instances will be launched.  If not specified, a
+zone is chosen from available zones within the "area" (see above).
 
 ## Example
 
@@ -93,6 +106,7 @@ like this:
 ---
 driver_plugin: gce
 driver_config:
+  area: any
   google_client_email: "123456789012@developer.gserviceaccount.com"
   google_key_location: "<%= ENV['HOME']%>/gce/1234567890abcdef1234567890abcdef12345678-privatekey.p12"
   google_project: "alpha-bravo-123"
@@ -126,11 +140,11 @@ Source is hosted on [GitHub](https://github.com/anl/kitchen-gce).
 Created and maintained by [Andrew Leonard](http://andyleonard.com)
 ([andy@hurricane-ridge.com](mailto:andy@hurricane-ridge.com)).
 
-The initial implementation drew heavily on the
+The initial release drew heavily on the
 [kitchen-ec2](https://github.com/opscode/kitchen-ec2/) gem for both
 inspiration and implementation details.  Any bugs, however, are solely
-the author's own fault.
+the author's own doing.
 
 ## License
 
-Apache 2.0.
+Licensed under Apache 2.0.
