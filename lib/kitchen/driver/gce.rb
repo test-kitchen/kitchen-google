@@ -23,11 +23,11 @@ module Kitchen
   module Driver
     class Gce < Kitchen::Driver::SSHBase
 
-      default_config :area,          'us'
-      default_config :machine_type,  'n1-standard-1'
-      default_config :name,          nil
-      default_config :username,      ENV['USER']
-      default_config :zone_name,     nil
+      default_config :area, 'us'
+      default_config :machine_type, 'n1-standard-1'
+      default_config :name, nil
+      default_config :username, ENV['USER']
+      default_config :zone_name, nil
 
       required_config :google_client_email
       required_config :google_key_location
@@ -59,7 +59,7 @@ module Kitchen
       end
 
       private
-      
+
       def connection
         Fog::Compute.new({
           :provider            => 'google',
