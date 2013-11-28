@@ -23,7 +23,9 @@ owner's email address).
 
 If you have not [set up SSH keys for your GCE
 environment](https://developers.google.com/compute/docs/instances#sshkeys),
-you must also do that prior to using kitchen-gce.
+you must also do that prior to using kitchen-gce.  Also, you will
+likely want to add your GCE SSH keys to ssh-agent prior to converging
+any instances.
 
 ## Installation
 
