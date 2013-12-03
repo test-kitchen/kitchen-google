@@ -35,7 +35,9 @@ module Kitchen
       required_config :image_name
 
       def create(state)
-        config[:name] ||= generate_name
+        if config[:name] == 'gce'
+          config[:name] = generate_name
+        end
         server = create_instance
         state[:server_id] = server.identity
 
