@@ -25,7 +25,7 @@ module Kitchen
 
       default_config :area, 'us'
       default_config :machine_type, 'n1-standard-1'
-      default_config :name, nil
+      default_config :inst_name, nil
       default_config :username, ENV['USER']
       default_config :zone_name, nil
 
@@ -35,9 +35,7 @@ module Kitchen
       required_config :image_name
 
       def create(state)
-        if config[:name] == 'gce'
-          config[:name] = generate_name
-        end
+        config[:inst_name] ||= generate_name
         server = create_instance
         state[:server_id] = server.identity
 
@@ -73,7 +71,7 @@ module Kitchen
 
       def create_instance
         connection.servers.create({
-          :name         => config[:name],
+          :name         => config[:inst_name],
           :image_name   => config[:image_name],
           :machine_type => config[:machine_type],
           :zone_name    => get_zone,

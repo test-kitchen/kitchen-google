@@ -81,7 +81,7 @@ instances will be launched.
 
 GCE instance type (size) to launch; default: `n1-standard-1`
 
-### name
+### inst_name
 
 Name to give to instance; unlike EC2's "Name" tag, this is used as an
 instance identifier and must be unique.  If none is specified, a unique
