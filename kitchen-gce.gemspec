@@ -10,8 +10,8 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/anl/kitchen-gce'
   s.license     = 'Apache 2.0'
 
-  s.add_dependency 'test-kitchen', '~> 1.0.0.beta.3'
-  s.add_dependency 'fog', '>= 1.11.0'
+  s.add_dependency 'test-kitchen'
+  s.add_dependency 'fog', '>= 1.19.0'
   s.add_dependency 'google-api-client'
 
   s.add_development_dependency 'bundler'
