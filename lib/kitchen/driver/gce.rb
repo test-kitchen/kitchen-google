@@ -35,6 +35,8 @@ module Kitchen
       required_config :image_name
 
       def create(state)
+        return if state[:server_id]
+
         config[:inst_name] ||= generate_name
         server = create_instance
         state[:server_id] = server.identity
