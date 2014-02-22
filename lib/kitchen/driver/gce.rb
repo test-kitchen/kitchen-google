@@ -27,6 +27,7 @@ module Kitchen
       default_config :machine_type, 'n1-standard-1'
       default_config :network, nil
       default_config :inst_name, nil
+      default_config :tags, []
       default_config :username, ENV['USER']
       default_config :zone_name, nil
 
@@ -78,6 +79,7 @@ module Kitchen
           :image_name   => config[:image_name],
           :machine_type => config[:machine_type],
           :network      => config[:network],
+          :tags         => config[:tags],
           :zone_name    => get_zone,
         })
       end
