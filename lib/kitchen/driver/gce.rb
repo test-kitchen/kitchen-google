@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Author:: Andrew Leonard (<andy@hurricane-ridge.com>)
 #
 # Copyright (C) 2013, Andrew Leonard
@@ -21,8 +23,10 @@ require 'kitchen'
 
 module Kitchen
   module Driver
+    # Google Compute Engine driver for Test Kitchen
+    #
+    # @author Andrew Leonard <andy@hurricane-ridge.com>
     class Gce < Kitchen::Driver::SSHBase
-
       default_config :area, 'us'
       default_config :machine_type, 'n1-standard-1'
       default_config :network, 'default'
@@ -39,15 +43,13 @@ module Kitchen
       def create(state)
         return if state[:server_id]
 
-        config[:inst_name] ||= generate_name
         server = create_instance
         state[:server_id] = server.identity
 
         info("GCE instance <#{state[:server_id]}> created.")
-        server.wait_for { print '.'; ready? } ; print '(server ready)'
-        state[:hostname] = server.public_ip_address || server.private_ip_address
-        wait_for_sshd(state[:hostname], config[:username])
-        puts '(ssh ready)'
+
+        wait_for_up_instance(server, state)
+
       rescue Fog::Errors::Error, Excon::Errors::Error => ex
         raise ActionFailed, ex.message
       end
@@ -65,50 +67,26 @@ module Kitchen
       private
 
       def connection
-        Fog::Compute.new({
-          :provider            => 'google',
-          :google_client_email => config[:google_client_email],
-          :google_key_location => config[:google_key_location],
-          :google_project      => config[:google_project],
-        })
+        Fog::Compute.new(
+          provider: 'google',
+          google_client_email: config[:google_client_email],
+          google_key_location: config[:google_key_location],
+          google_project: config[:google_project]
+        )
       end
 
       def create_instance
-        connection.servers.create({
-          :name         => config[:inst_name],
-          :image_name   => config[:image_name],
-          :machine_type => config[:machine_type],
-          :network      => config[:network],
-          :tags         => config[:tags],
-          :zone_name    => get_zone,
-        })
-      end
+        config[:inst_name] ||= generate_name
+        config[:zone_name] ||= select_zone
 
-      def get_zone
-        if config[:zone_name].nil?
-          zones = []
-          connection.zones.each do |z|
-            case config[:area]
-            when 'us'
-              if z.name.match(/^us/) and z.status == 'UP'
-                zones.push(z)
-              end
-            when 'europe'
-              if z.name.match(/^europe/) and z.status == 'UP'
-                zones.push(z)
-              end
-            when 'any'
-              if z.status == 'UP'
-                zones.push(z)
-              end
-            else
-              raise ArgumentError, 'Unknown area'
-            end
-          end
-          return zones.sample.name
-        else
-          return config[:zone_name]
-        end
+        connection.servers.create(
+          name: config[:inst_name],
+          image_name: config[:image_name],
+          machine_type: config[:machine_type],
+          network: config[:network],
+          tags: config[:tags],
+          zone_name: config[:zone_name]
+        )
       end
 
       def generate_name
@@ -117,6 +95,30 @@ module Kitchen
         "#{base_name}-#{SecureRandom.uuid}"
       end
 
+      def select_zone
+        if config[:area] == 'any'
+          zone_regexp = /^[a-z]+\-/
+        else
+          zone_regexp = /^#{config[:area]}\-/
+        end
+        zones = connection.zones.select do |z|
+          z.status == 'UP' && z.name.match(zone_regexp)
+        end
+        fail 'No up zones in area' unless zones.length >= 1
+        zones.sample.name
+      end
+
+      def wait_for_up_instance(server, state)
+        server.wait_for do
+          print '.'
+          ready?
+        end
+        print '(server ready)'
+        state[:hostname] = server.public_ip_address ||
+          server.private_ip_address
+        wait_for_sshd(state[:hostname], config[:username])
+        puts '(ssh ready)'
+      end
     end
   end
 end
