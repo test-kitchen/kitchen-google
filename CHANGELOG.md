@@ -1,4 +1,4 @@
-## Changes in development:
+## 0.0.6 / 2014-02-23:
 
 * Require Ruby 1.9 or greater.
 
