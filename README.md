@@ -11,6 +11,8 @@ providers, GCE has a couple of advantages for Chef cookbook testing:
 
 ## Requirements
 
+Ruby 1.9 or greater.
+
 A [Google Cloud Platform](https://cloud.google.com) account is
 required.  If you do not already have an appropriate "project" in
 which to run your test-kitchen instances, create one, noting the
@@ -38,7 +40,6 @@ source 'https://rubygems.org'
 gem 'berkshelf'
 
 group :integration do
-  gem 'test-kitchen', '~> 1.0.0.beta'
   gem 'kitchen-gce'
 end
 ```
@@ -77,10 +78,6 @@ instances will be launched.
 
 **Required** Operating system image to deploy.
 
-### machine_type
-
-GCE instance type (size) to launch; default: `n1-standard-1`
-
 ### inst_name
 
 Name to give to instance; unlike EC2's "Name" tag, this is used as an
@@ -88,6 +85,18 @@ instance identifier and must be unique.  If none is specified, a unique
 name will be auto-generated; note that auto-generated names must be
 used if there is more than one test suite.  Default:
 `<suite>-<platform>-<UUID>`
+
+### machine_type
+
+GCE instance type (size) to launch; default: `n1-standard-1`
+
+### network
+
+GCE network that instance will be attached to; default: `default`
+
+### tags
+
+Array of tags to associate with instance; default: `[]`
 
 ### username
 
@@ -112,12 +121,14 @@ driver_config:
   google_client_email: "123456789012@developer.gserviceaccount.com"
   google_key_location: "<%= ENV['HOME']%>/gce/1234567890abcdef1234567890abcdef12345678-privatekey.p12"
   google_project: "alpha-bravo-123"
+  network: "kitchenci"
 
 platforms:
 - name: debian-7
   driver_config:
     image_name: debian-7-wheezy-v20130926
     require_chef_omnibus: true
+    tags: ["somerole"]
 
 suites:
 - name: default

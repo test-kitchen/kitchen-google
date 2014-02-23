@@ -1,3 +1,16 @@
+## Changes in development:
+
+* Require Ruby 1.9 or greater.
+
+### Improvements
+
+* Add support for specifying GCE network and tags.
+
+### Bug fixes
+
+* Temporarily pin Fog version to 1.19.0 until 1.20.0 support is added.
+* Require Faraday Gem version to be ~> 0.8.9; 0.9.0 breaks test-kitchen.
+
 ## 0.0.4 / 2013-12-28
 
 ### Bug fixes
