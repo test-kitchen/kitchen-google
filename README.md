@@ -108,6 +108,11 @@ to the appropriate SSH keys.  Default: `ENV['USER']`
 Location into which instances will be launched.  If not specified, a
 zone is chosen from available zones within the "area" (see above).
 
+### public_key_path
+
+Path to the public half of the ssh key that will be dropped of on the
+instance in ~/.ssh/authorized_keys.
+
 ## Example
 
 An example `.kitchen.yml` file using kitchen-gce might look something
@@ -128,6 +133,7 @@ platforms:
   driver_config:
     image_name: debian-7-wheezy-v20130926
     require_chef_omnibus: true
+    public_key_path: '/home/alice/.ssh/google_compute_engine.pub'
     tags: ["somerole"]
 
 suites:
