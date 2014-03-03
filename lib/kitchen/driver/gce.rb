@@ -85,7 +85,8 @@ module Kitchen
           machine_type: config[:machine_type],
           network: config[:network],
           tags: config[:tags],
-          zone_name: config[:zone_name]
+          zone_name: config[:zone_name],
+          public_key_path: config[:public_key_path],
         )
       end
 
