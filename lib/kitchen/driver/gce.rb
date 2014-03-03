@@ -87,6 +87,7 @@ module Kitchen
           tags: config[:tags],
           zone_name: config[:zone_name],
           public_key_path: config[:public_key_path],
+          username: config[:username]
         )
       end
 
