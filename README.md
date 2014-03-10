@@ -94,24 +94,23 @@ GCE instance type (size) to launch; default: `n1-standard-1`
 
 GCE network that instance will be attached to; default: `default`
 
+### public_key_path
+
+Path to the public half of the ssh key that will be deployed to 
+`~username/.ssh/authorized_keys`; see also "username" below.
+
 ### tags
 
 Array of tags to associate with instance; default: `[]`
 
 ### username
 
-Username to log into instance as; this user is assumed to have access
-to the appropriate SSH keys.  Default: `ENV['USER']`
+Username test-kitchen will log into instance as; default: `ENV['USER']`
 
 ### zone_name
 
 Location into which instances will be launched.  If not specified, a
 zone is chosen from available zones within the "area" (see above).
-
-### public_key_path
-
-Path to the public half of the ssh key that will be dropped of on the
-instance in ~/.ssh/authorized_keys.
 
 ## Example
 
