@@ -12,32 +12,40 @@ describe Kitchen::Driver::Gce do
 
   describe '#initialize' do
     context 'with default options' do
-      it 'defaults to the "us" area' do
-        expect(driver[:area]).to eq('us')
-      end
 
-      it 'defaults to an n1-standard-1 instance' do
-        expect(driver[:machine_type]).to eq('n1-standard-1')
-      end
+      defaults = {
+        area: 'us',
+        inst_name: nil,
+        machine_type: 'n1-standard-1',
+        network: 'default',
+        tags: [],
+        username: ENV['USER'],
+        zone_name: nil }
 
-      it 'defaults to the "default" network' do
-        expect(driver[:network]).to eq('default')
+      defaults.each do |k, v|
+        it "sets the correct default for #{k}" do
+          expect(driver[k]).to eq(v)
+        end
       end
+    end
 
-      it 'defaults to a nil instance name' do
-        expect(driver[:inst_name]).to be(nil)
-      end
+    context 'with overriden options' do
+      overrides = {
+        area: 'europe',
+        inst_name: 'ci-instance',
+        machine_type: 'n1-highmem-8',
+        network: 'dev-net',
+        tags: %w{qa integration},
+        username: 'root',
+        zone_name: 'europe-west1-a'
+      }
 
-      it 'defaults to an empty array of tags' do
-        expect(driver[:tags]).to eq([])
-      end
+      let(:config) { overrides }
 
-      it 'defaults to the running username' do
-        expect(driver[:username]).to eq(ENV['USER'])
-      end
-
-      it 'does not specify a zone' do
-        expect(driver[:zone_name]).to be(nil)
+      overrides.each do |k, v|
+        it "overrides the default value for #{k}" do
+          expect(driver[k]).to eq(v)
+        end
       end
     end
   end
