@@ -76,7 +76,7 @@ module Kitchen
       end
 
       def create_instance
-        config[:inst_name] ||= generate_name
+        config[:inst_name] ||= generate_inst_name
         config[:zone_name] ||= select_zone
 
         connection.servers.create(
@@ -91,7 +91,7 @@ module Kitchen
         )
       end
 
-      def generate_name
+      def generate_inst_name
         # Inspired by generate_name from kitchen-rackspace
         base_name = instance.name[0..26] # UUID is 36 chars, max name length 63
         "#{base_name}-#{SecureRandom.uuid}"

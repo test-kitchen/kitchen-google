@@ -71,10 +71,10 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#generate_name' do
+  describe '#generate_inst_name' do
     context 'with a name less than 28 characters' do
       it 'concatenates the name and a UUID' do
-        expect(driver.send(:generate_name)).to match(
+        expect(driver.send(:generate_inst_name)).to match(
           /^default-distro-12-[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/)
       end
     end
@@ -85,7 +85,7 @@ describe Kitchen::Driver::Gce do
       end
 
       it 'shortens the base name and appends a UUID' do
-        expect(driver.send(:generate_name)).to match(
+        expect(driver.send(:generate_inst_name)).to match(
           /^123456789012345678901234567
             -[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/x)
       end
