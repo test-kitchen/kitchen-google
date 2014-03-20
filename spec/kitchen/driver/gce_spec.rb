@@ -4,7 +4,12 @@ require_relative '../../spec_helper.rb'
 
 describe Kitchen::Driver::Gce do
 
-  let(:config) { Hash.new }
+  let(:config) do
+    { google_client_email: '123456789012@developer.gserviceaccount.com',
+      google_key_location: '/home/user/gce/123456-privatekey.p12',
+      google_project: 'alpha-bravo-123'
+    }
+  end
   let(:state) { Hash.new }
 
   let(:instance) do
@@ -15,6 +20,11 @@ describe Kitchen::Driver::Gce do
     d = Kitchen::Driver::Gce.new(config)
     d.instance = instance
     d
+  end
+
+  before(:each) do
+    Fog.mock!
+    Fog::Mock.reset
   end
 
   describe '#initialize' do
@@ -57,6 +67,27 @@ describe Kitchen::Driver::Gce do
     end
   end
 
+  describe '#connection' do
+    context 'with required variables set' do
+      it 'returns a Fog object' do
+        expect(driver.send(:connection)).to be_a(Fog::Compute::Google::Mock)
+      end
+
+      it 'uses the v1beta16 api version' do
+        conn = driver.send(:connection)
+        expect(conn.api_version).to eq('v1beta16')
+      end
+    end
+
+    context 'without required variables set' do
+      let(:config) { Hash.new }
+
+      it 'raises an error' do
+        expect { driver.send(:connection) }.to raise_error(ArgumentError)
+      end
+    end
+  end
+
   describe '#create' do
     context 'with an existing server' do
       let(:state) do
@@ -90,7 +121,50 @@ describe Kitchen::Driver::Gce do
             -[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/x)
       end
     end
+  end
 
+  describe '#select_zone' do
+    context 'when choosing from any area' do
+      let(:config) do
+        { area: 'europe',
+          google_client_email: '123456789012@developer.gserviceaccount.com',
+          google_key_location: '/home/user/gce/123456-privatekey.p12',
+          google_project: 'alpha-bravo-123'
+        }
+      end
+
+      it 'chooses from all zones' do
+        expect(driver.send(:select_zone)).to satisfy do |zone|
+          %w(europe-west1-a us-central1-a us-central1-b
+             us-central2-a).include?(zone)
+        end
+      end
+    end
+
+    context 'when choosing from the "europe" area' do
+      let(:config) do
+        { area: 'europe',
+          google_client_email: '123456789012@developer.gserviceaccount.com',
+          google_key_location: '/home/user/gce/123456-privatekey.p12',
+          google_project: 'alpha-bravo-123'
+        }
+      end
+
+      it 'chooses a zone in europe' do
+        expect(driver.send(:select_zone)).to satisfy do |zone|
+          %w(europe-west1-a).include?(zone)
+        end
+      end
+    end
+
+    context 'when choosing from the default "us" area' do
+      it 'chooses a zone in the us' do
+        expect(driver.send(:select_zone)).to satisfy do |zone|
+          %w(us-central1-a us-central1-b us-central2-a).include?(zone)
+        end
+
+      end
+    end
   end
 
 end
