@@ -102,6 +102,15 @@ describe Kitchen::Driver::Gce do
     end
   end
 
+  describe '#create_instance' do
+    context 'with default options' do
+      it 'returns a server object' do
+        expect(driver.send(:create_instance)).to be_a(
+          Fog::Compute::Google::Server)
+      end
+    end
+  end
+
   describe '#generate_inst_name' do
     context 'with a name less than 28 characters' do
       it 'concatenates the name and a UUID' do
