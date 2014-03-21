@@ -135,7 +135,7 @@ describe Kitchen::Driver::Gce do
   describe '#select_zone' do
     context 'when choosing from any area' do
       let(:config) do
-        { area: 'europe',
+        { area: 'any',
           google_client_email: '123456789012@developer.gserviceaccount.com',
           google_key_location: '/home/user/gce/123456-privatekey.p12',
           google_project: 'alpha-bravo-123'
