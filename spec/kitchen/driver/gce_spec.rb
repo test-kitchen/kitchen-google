@@ -10,21 +10,39 @@ describe Kitchen::Driver::Gce do
       google_project: 'alpha-bravo-123'
     }
   end
+
   let(:state) { Hash.new }
 
+  let(:logged_output) { StringIO.new }
+  let(:logger) { Logger.new(logged_output) }
+
   let(:instance) do
-    double(name: 'default-distro-12')
+    double(
+      logger: logger,
+      name: 'default-distro-12'
+    )
   end
 
   let(:driver) do
     d = Kitchen::Driver::Gce.new(config)
     d.instance = instance
+    d.stub(:wait_for_sshd).and_return(true)
     d
+  end
+
+  let(:server) do
+    fog = Fog::Compute::Google::Mock.new
+    fog.servers.create(
+      name: 'rspec-test-instance',
+      machine_type: 'n1-standard-1',
+      zone_name: 'us-central1-b'
+    )
   end
 
   before(:each) do
     Fog.mock!
     Fog::Mock.reset
+    Fog::Mock.delay = 0
   end
 
   describe '#initialize' do
@@ -52,7 +70,7 @@ describe Kitchen::Driver::Gce do
         inst_name: 'ci-instance',
         machine_type: 'n1-highmem-8',
         network: 'dev-net',
-        tags: %w{qa integration},
+        tags: %w(qa integration),
         username: 'root',
         zone_name: 'europe-west1-a'
       }
@@ -69,7 +87,7 @@ describe Kitchen::Driver::Gce do
 
   describe '#connection' do
     context 'with required variables set' do
-      it 'returns a Fog object' do
+      it 'returns a Fog Compute object' do
         expect(driver.send(:connection)).to be_a(Fog::Compute::Google::Mock)
       end
 
@@ -100,14 +118,54 @@ describe Kitchen::Driver::Gce do
         expect(driver.create(state)).to equal nil
       end
     end
+
+    context 'when an instance is successfully created' do
+
+      let(:driver) do
+        d = Kitchen::Driver::Gce.new(config)
+        d.stub(create_instance: server)
+        d.stub(:wait_for_up_instance).and_return(nil)
+        d
+      end
+
+      it 'sets a value for server_id in the state hash' do
+        driver.send(:create, state)
+        expect(state[:server_id]).to eq('rspec-test-instance')
+      end
+
+      it 'returns nil' do
+        expect(driver.send(:create, state)).to equal(nil)
+      end
+
+    end
+
   end
 
   describe '#create_instance' do
     context 'with default options' do
-      it 'returns a server object' do
+      it 'returns a Fog Compute Server object' do
         expect(driver.send(:create_instance)).to be_a(
           Fog::Compute::Google::Server)
       end
+    end
+  end
+
+  describe '#destroy' do
+    let(:state) do
+      s = Hash.new
+      s[:server_id] = 'rspec-test-instance'
+      s[:hostname] = '198.51.100.17'
+      s
+    end
+
+    it 'returns if server_id does not exist' do
+      expect(driver.destroy({})).to equal nil
+    end
+
+    it 'removes the server state information' do
+      driver.destroy(state)
+      expect(state[:hostname]).to equal(nil)
+      expect(state[:server_id]).to equal(nil)
     end
   end
 
@@ -176,4 +234,11 @@ describe Kitchen::Driver::Gce do
     end
   end
 
+  describe '#wait_for_up_instance' do
+    it 'sets the hostname' do
+      driver.send(:wait_for_up_instance, server, state)
+      # Mock instance gives us a random IP each time:
+      expect(state[:hostname]).to match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)
+    end
+  end
 end
