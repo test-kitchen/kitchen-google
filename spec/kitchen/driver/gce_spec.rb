@@ -2,6 +2,8 @@
 
 require_relative '../../spec_helper.rb'
 
+require 'resolv'
+
 describe Kitchen::Driver::Gce do
 
   let(:config) do
@@ -238,7 +240,7 @@ describe Kitchen::Driver::Gce do
     it 'sets the hostname' do
       driver.send(:wait_for_up_instance, server, state)
       # Mock instance gives us a random IP each time:
-      expect(state[:hostname]).to match(/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/)
+      expect(state[:hostname]).to match(Resolv::IPv4::Regex)
     end
   end
 end
