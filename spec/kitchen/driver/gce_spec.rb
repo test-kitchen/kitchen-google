@@ -9,7 +9,7 @@ describe Kitchen::Driver::Gce do
   let(:config) do
     { google_client_email: '123456789012@developer.gserviceaccount.com',
       google_key_location: '/home/user/gce/123456-privatekey.p12',
-      google_project: 'alpha-bravo-123'
+      google_project: 'alpha-bravo-123',
     }
   end
 
@@ -93,9 +93,9 @@ describe Kitchen::Driver::Gce do
         expect(driver.send(:connection)).to be_a(Fog::Compute::Google::Mock)
       end
 
-      it 'uses the v1beta16 api version' do
+      it 'uses the v1 api version' do
         conn = driver.send(:connection)
-        expect(conn.api_version).to eq('v1beta16')
+        expect(conn.api_version).to eq('v1')
       end
     end
 
@@ -141,6 +141,17 @@ describe Kitchen::Driver::Gce do
 
     end
 
+  end
+
+  describe '#create_disk' do
+    context 'with defaults and required options' do
+      it 'returns a Google Disk object' do
+        config[:image_name] = 'debian-7-wheezy-v20131120'
+        config[:inst_name] = 'rspec-disk'
+        config[:zone_name] = 'us-central1-a'
+        expect(driver.send(:create_disk)).to be_a(Fog::Compute::Google::Disk)
+      end
+    end
   end
 
   describe '#create_instance' do

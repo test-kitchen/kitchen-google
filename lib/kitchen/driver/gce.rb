@@ -28,6 +28,7 @@ module Kitchen
     # @author Andrew Leonard <andy@hurricane-ridge.com>
     class Gce < Kitchen::Driver::SSHBase
       default_config :area, 'us'
+      default_config :disk_size, 10
       default_config :machine_type, 'n1-standard-1'
       default_config :network, 'default'
       default_config :inst_name, nil
@@ -73,6 +74,18 @@ module Kitchen
           google_key_location: config[:google_key_location],
           google_project: config[:google_project]
         )
+      end
+
+      def create_disk
+        disk = connection.disks.create(
+          name: config[:inst_name],
+          size_gb: config[:disk_size],
+          zone_name: config[:zone_name],
+          source_image: config[:image_name]
+        )
+
+        disk.wait_for { disk.ready? }
+        disk
       end
 
       def create_instance
