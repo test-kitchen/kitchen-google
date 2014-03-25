@@ -92,9 +92,14 @@ module Kitchen
         config[:inst_name] ||= generate_inst_name
         config[:zone_name] ||= select_zone
 
+        disk = create_disk
+        create_server(disk)
+      end
+
+      def create_server(disk)
         connection.servers.create(
           name: config[:inst_name],
-          image_name: config[:image_name],
+          disks: [disk],
           machine_type: config[:machine_type],
           network: config[:network],
           tags: config[:tags],

@@ -32,10 +32,23 @@ describe Kitchen::Driver::Gce do
     d
   end
 
+  let(:fog) do
+    Fog::Compute::Google::Mock.new
+  end
+
+  let(:disk) do
+    fog.disks.create(
+      name: 'rspec-test-disk',
+      size_gb: 10,
+      zone_name: 'us-central1-b',
+      source_image: 'debian-7-wheezy-v20131120'
+    )
+  end
+
   let(:server) do
-    fog = Fog::Compute::Google::Mock.new
     fog.servers.create(
       name: 'rspec-test-instance',
+      disks: [disk],
       machine_type: 'n1-standard-1',
       zone_name: 'us-central1-b'
     )
