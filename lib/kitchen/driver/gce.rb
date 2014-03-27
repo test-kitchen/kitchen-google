@@ -28,6 +28,7 @@ module Kitchen
     # @author Andrew Leonard <andy@hurricane-ridge.com>
     class Gce < Kitchen::Driver::SSHBase
       default_config :area, 'us'
+      default_config :autodelete_disk, true
       default_config :disk_size, 10
       default_config :machine_type, 'n1-standard-1'
       default_config :network, 'default'
@@ -99,7 +100,7 @@ module Kitchen
       def create_server(disk)
         connection.servers.create(
           name: config[:inst_name],
-          disks: [disk],
+          disks: [disk.get_as_boot_disk(true, config[:autodelete_disk])],
           machine_type: config[:machine_type],
           network: config[:network],
           tags: config[:tags],
