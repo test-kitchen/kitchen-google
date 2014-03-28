@@ -65,6 +65,8 @@ describe Kitchen::Driver::Gce do
 
       defaults = {
         area: 'us',
+        autodelete_disk: true,
+        disk_size: 10,
         inst_name: nil,
         machine_type: 'n1-standard-1',
         network: 'default',
@@ -82,6 +84,8 @@ describe Kitchen::Driver::Gce do
     context 'with overriden options' do
       overrides = {
         area: 'europe',
+        autodelete_disk: false,
+        disk_size: 15,
         inst_name: 'ci-instance',
         machine_type: 'n1-highmem-8',
         network: 'dev-net',
@@ -165,9 +169,25 @@ describe Kitchen::Driver::Gce do
         expect(driver.send(:create_disk)).to be_a(Fog::Compute::Google::Disk)
       end
     end
+
+    context 'without required options' do
+      it 'returns a Fog NotFound Error' do
+        expect { driver.send(:create_disk) }.to raise_error(
+          Fog::Errors::NotFound)
+      end
+    end
   end
 
   describe '#create_instance' do
+    context 'with default options' do
+      it 'returns a Fog Compute Server object' do
+        expect(driver.send(:create_instance)).to be_a(
+          Fog::Compute::Google::Server)
+      end
+    end
+  end
+
+  describe '#create_server' do
     context 'with default options' do
       it 'returns a Fog Compute Server object' do
         expect(driver.send(:create_instance)).to be_a(
