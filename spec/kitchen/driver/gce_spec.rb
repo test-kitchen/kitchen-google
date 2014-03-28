@@ -9,7 +9,7 @@ describe Kitchen::Driver::Gce do
   let(:config) do
     { google_client_email: '123456789012@developer.gserviceaccount.com',
       google_key_location: '/home/user/gce/123456-privatekey.p12',
-      google_project: 'alpha-bravo-123',
+      google_project: 'alpha-bravo-123'
     }
   end
 
