@@ -23,11 +23,12 @@ file, and note the email address associated with the service account
 (e.g. 123456789012@developer.gserviceaccount.com - not the project
 owner's email address).
 
-If you have not [set up SSH keys for your GCE
+If you are not using the `public_key_path` setting (see below) and
+have not [set up SSH keys for your GCE
 environment](https://developers.google.com/compute/docs/instances#sshkeys),
 you must also do that prior to using kitchen-gce.  Also, you will
-likely want to add your GCE SSH keys to ssh-agent prior to converging
-any instances.
+likely want to add your SSH keys to ssh-agent prior to converging any
+instances.
 
 ## Installation
 
