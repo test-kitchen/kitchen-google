@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency 'test-kitchen'
   s.add_dependency 'faraday', '~> 0.8.9'
-  s.add_dependency 'fog', '1.19.0'
+  s.add_dependency 'fog', '>= 1.20.0'
   s.add_dependency 'google-api-client'
 
   s.add_development_dependency 'bundler'

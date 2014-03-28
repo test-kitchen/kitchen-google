@@ -32,10 +32,23 @@ describe Kitchen::Driver::Gce do
     d
   end
 
+  let(:fog) do
+    Fog::Compute::Google::Mock.new
+  end
+
+  let(:disk) do
+    fog.disks.create(
+      name: 'rspec-test-disk',
+      size_gb: 10,
+      zone_name: 'us-central1-b',
+      source_image: 'debian-7-wheezy-v20131120'
+    )
+  end
+
   let(:server) do
-    fog = Fog::Compute::Google::Mock.new
     fog.servers.create(
       name: 'rspec-test-instance',
+      disks: [disk],
       machine_type: 'n1-standard-1',
       zone_name: 'us-central1-b'
     )
@@ -52,6 +65,8 @@ describe Kitchen::Driver::Gce do
 
       defaults = {
         area: 'us',
+        autodelete_disk: true,
+        disk_size: 10,
         inst_name: nil,
         machine_type: 'n1-standard-1',
         network: 'default',
@@ -69,6 +84,8 @@ describe Kitchen::Driver::Gce do
     context 'with overriden options' do
       overrides = {
         area: 'europe',
+        autodelete_disk: false,
+        disk_size: 15,
         inst_name: 'ci-instance',
         machine_type: 'n1-highmem-8',
         network: 'dev-net',
@@ -93,9 +110,9 @@ describe Kitchen::Driver::Gce do
         expect(driver.send(:connection)).to be_a(Fog::Compute::Google::Mock)
       end
 
-      it 'uses the v1beta16 api version' do
+      it 'uses the v1 api version' do
         conn = driver.send(:connection)
-        expect(conn.api_version).to eq('v1beta16')
+        expect(conn.api_version).to eq('v1')
       end
     end
 
@@ -143,7 +160,34 @@ describe Kitchen::Driver::Gce do
 
   end
 
+  describe '#create_disk' do
+    context 'with defaults and required options' do
+      it 'returns a Google Disk object' do
+        config[:image_name] = 'debian-7-wheezy-v20131120'
+        config[:inst_name] = 'rspec-disk'
+        config[:zone_name] = 'us-central1-a'
+        expect(driver.send(:create_disk)).to be_a(Fog::Compute::Google::Disk)
+      end
+    end
+
+    context 'without required options' do
+      it 'returns a Fog NotFound Error' do
+        expect { driver.send(:create_disk) }.to raise_error(
+          Fog::Errors::NotFound)
+      end
+    end
+  end
+
   describe '#create_instance' do
+    context 'with default options' do
+      it 'returns a Fog Compute Server object' do
+        expect(driver.send(:create_instance)).to be_a(
+          Fog::Compute::Google::Server)
+      end
+    end
+  end
+
+  describe '#create_server' do
     context 'with default options' do
       it 'returns a Fog Compute Server object' do
         expect(driver.send(:create_instance)).to be_a(

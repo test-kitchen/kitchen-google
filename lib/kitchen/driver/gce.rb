@@ -28,6 +28,8 @@ module Kitchen
     # @author Andrew Leonard <andy@hurricane-ridge.com>
     class Gce < Kitchen::Driver::SSHBase
       default_config :area, 'us'
+      default_config :autodelete_disk, true
+      default_config :disk_size, 10
       default_config :machine_type, 'n1-standard-1'
       default_config :network, 'default'
       default_config :inst_name, nil
@@ -43,12 +45,12 @@ module Kitchen
       def create(state)
         return if state[:server_id]
 
-        server = create_instance
-        state[:server_id] = server.identity
+        instance = create_instance
+        state[:server_id] = instance.identity
 
         info("GCE instance <#{state[:server_id]}> created.")
 
-        wait_for_up_instance(server, state)
+        wait_for_up_instance(instance, state)
 
       rescue Fog::Errors::Error, Excon::Errors::Error => ex
         raise ActionFailed, ex.message
@@ -57,8 +59,8 @@ module Kitchen
       def destroy(state)
         return if state[:server_id].nil?
 
-        server = connection.servers.get(state[:server_id])
-        server.destroy unless server.nil?
+        instance = connection.servers.get(state[:server_id])
+        instance.destroy unless instance.nil?
         info("GCE instance <#{state[:server_id]}> destroyed.")
         state.delete(:server_id)
         state.delete(:hostname)
@@ -75,13 +77,30 @@ module Kitchen
         )
       end
 
+      def create_disk
+        disk = connection.disks.create(
+          name: config[:inst_name],
+          size_gb: config[:disk_size],
+          zone_name: config[:zone_name],
+          source_image: config[:image_name]
+        )
+
+        disk.wait_for { disk.ready? }
+        disk
+      end
+
       def create_instance
         config[:inst_name] ||= generate_inst_name
         config[:zone_name] ||= select_zone
 
+        disk = create_disk
+        create_server(disk)
+      end
+
+      def create_server(disk)
         connection.servers.create(
           name: config[:inst_name],
-          image_name: config[:image_name],
+          disks: [disk.get_as_boot_disk(true, config[:autodelete_disk])],
           machine_type: config[:machine_type],
           network: config[:network],
           tags: config[:tags],
@@ -110,14 +129,14 @@ module Kitchen
         zones.sample.name
       end
 
-      def wait_for_up_instance(server, state)
-        server.wait_for do
+      def wait_for_up_instance(instance, state)
+        instance.wait_for do
           print '.'
           ready?
         end
         print '(server ready)'
-        state[:hostname] = server.public_ip_address ||
-          server.private_ip_address
+        state[:hostname] = instance.public_ip_address ||
+          instance.private_ip_address
         wait_for_sshd(state[:hostname], config[:username])
         puts '(ssh ready)'
       end

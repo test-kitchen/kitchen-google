@@ -59,6 +59,15 @@ launching instances into a zone that is down for maintenance.  If
 "any" is specified, kitchen-gce will select a zone from all areas.
 Default: `us` (lowest cost area); valid values: `any`, `europe`, `us`
 
+### autodelete_disk
+
+Boolean specifying whether or not to automatically delete boot disk
+for test instance.  Default: true
+
+### disk_size
+
+Size, in gigabytes of boot disk.  Default: 10.
+
 ### google_client_email
 
 **Required** Email address associated with your GCE service account.
@@ -131,7 +140,7 @@ driver_config:
 platforms:
 - name: debian-7
   driver_config:
-    image_name: debian-7-wheezy-v20130926
+    image_name: debian-7-wheezy-v20140318
     require_chef_omnibus: true
     public_key_path: '/home/alice/.ssh/google_compute_engine.pub'
     tags: ["somerole"]
