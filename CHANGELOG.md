@@ -2,7 +2,7 @@
 
 ### New Features
 
-* PR #7: Add support for specifying SSH keys in public_key_path, via [@someara][]
+* PR #7: Add support for specifying SSH keys in public_key_path, via @someara
 * Add support for setting username
 * Support GCE v1 API, including persistent disks.
 	
