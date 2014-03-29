@@ -1,3 +1,5 @@
+## 0.1.0 / 2014-03-29
+
 ### New Features
 
 * PR #7: Add support for specifying SSH keys in public_key_path, via @someara
