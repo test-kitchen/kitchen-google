@@ -1,3 +1,13 @@
+### New Features
+
+* PR #7: Add support for specifying SSH keys in public_key_path, via @someara
+* Add support for setting username
+* Support GCE v1 API, including persistent disks.
+	
+### Improvements
+
+* Add rspec tests and Travis support.
+	
 ## 0.0.6 / 2014-02-23:
 
 * Require Ruby 1.9 or greater.
