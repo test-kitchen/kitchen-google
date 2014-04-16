@@ -11,10 +11,10 @@ Gem::Specification.new do |s|
   s.homepage    = 'https://github.com/anl/kitchen-gce'
   s.license     = 'Apache 2.0'
 
-  s.add_dependency 'test-kitchen'
-  s.add_dependency 'faraday', '~> 0.8.9' # See GH issue RiotGames/ridley#239
   s.add_dependency 'fog', '>= 1.20.0'
   s.add_dependency 'google-api-client'
+  s.add_dependency 'ridley', '>= 3.0.0' # See GH issue RiotGames/ridley#239
+  s.add_dependency 'test-kitchen'
 
   s.add_development_dependency 'bundler'
   s.add_development_dependency 'pry'
