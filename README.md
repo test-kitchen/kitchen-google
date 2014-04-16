@@ -57,7 +57,8 @@ availability zone's name; e.g. in "us-central1-b", the area is "us".
 Specifying area but not "zone_name" allows kitchen-gce to avoid
 launching instances into a zone that is down for maintenance.  If
 "any" is specified, kitchen-gce will select a zone from all areas.
-Default: `us` (lowest cost area); valid values: `any`, `europe`, `us`
+Default: `us` (lowest cost area); valid values: `any`, `asia`,
+`europe`, `us`
 
 ### autodelete_disk
 
