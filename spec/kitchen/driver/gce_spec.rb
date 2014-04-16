@@ -270,6 +270,22 @@ describe Kitchen::Driver::Gce do
       end
     end
 
+    context 'when choosing from the "asia" area' do
+      let(:config) do
+        { area: 'asia',
+          google_client_email: '123456789012@developer.gserviceaccount.com',
+          google_key_location: '/home/user/gce/123456-privatekey.p12',
+          google_project: 'alpha-bravo-123'
+        }
+      end
+
+      it 'receives a zone in asia' do
+        expect(driver.send(:select_zone)).to satisfy do |zone|
+          %w(asia-east1-a asia-east1-b).include?(zone)
+        end
+      end
+    end
+
     context 'when choosing from the "europe" area' do
       let(:config) do
         { area: 'europe',
