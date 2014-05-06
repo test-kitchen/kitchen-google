@@ -112,7 +112,7 @@ module Kitchen
 
       def generate_inst_name
         # Inspired by generate_name from kitchen-rackspace
-        base_name = instance.name[0..26] # UUID is 36 chars, max name length 63
+        base_name = instance.name[0..25] # UUID is 36 chars, max name length 63
         "#{base_name}-#{SecureRandom.uuid}"
       end
 

@@ -57,7 +57,7 @@ describe Kitchen::Driver::Gce do
       name: 'rspec-test-disk',
       size_gb: 10,
       zone_name: 'us-central1-b',
-      source_image: 'debian-7-wheezy-v20131120'
+      source_image: 'debian-7-wheezy-v20130816'
     )
   end
 
@@ -179,7 +179,7 @@ describe Kitchen::Driver::Gce do
   describe '#create_disk' do
     context 'with defaults and required options' do
       it 'returns a Google Disk object' do
-        config[:image_name] = 'debian-7-wheezy-v20131120'
+        config[:image_name] = 'debian-7-wheezy-v20130816'
         config[:inst_name] = 'rspec-disk'
         config[:zone_name] = 'us-central1-a'
         expect(driver.send(:create_disk)).to be_a(Fog::Compute::Google::Disk)
@@ -247,7 +247,7 @@ describe Kitchen::Driver::Gce do
       it 'shortens the base name and appends a UUID' do
         expect(driver.send(:generate_inst_name).length).to eq 63
         expect(driver.send(:generate_inst_name)).to match(
-          /^123456789012345678901234567
+          /^12345678901234567890123456
             -[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/x)
       end
     end
