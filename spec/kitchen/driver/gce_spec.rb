@@ -239,12 +239,13 @@ describe Kitchen::Driver::Gce do
       end
     end
 
-    context 'with a name 28 characters or longer' do
+    context 'with a name 27 characters or longer' do
       let(:instance) do
-        double(name: '1234567890123456789012345678')
+        double(name: '123456789012345678901234567')
       end
 
       it 'shortens the base name and appends a UUID' do
+        expect(driver.send(:generate_inst_name).length).to eq 63
         expect(driver.send(:generate_inst_name)).to match(
           /^123456789012345678901234567
             -[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/x)
