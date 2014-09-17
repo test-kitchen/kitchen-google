@@ -90,6 +90,8 @@ module Kitchen
       end
 
       def create_instance
+        config[:region] ||= config[:area]
+
         config[:inst_name] ||= generate_inst_name
         config[:zone_name] ||= select_zone
 
@@ -117,15 +119,15 @@ module Kitchen
       end
 
       def select_zone
-        if config[:area] == 'any'
+        if config[:region] == 'any'
           zone_regexp = /^[a-z]+\-/
         else
-          zone_regexp = /^#{config[:area]}\-/
+          zone_regexp = /^#{config[:region]}\-/
         end
         zones = connection.zones.select do |z|
           z.status == 'UP' && z.name.match(zone_regexp)
         end
-        fail 'No up zones in area' unless zones.length >= 1
+        fail 'No up zones in region' unless zones.length >= 1
         zones.sample.name
       end
 

@@ -1,3 +1,9 @@
+## ???
+
+### Improvements
+
+* #10: Deprecate "area" in configuration for "region".
+
 ## 0.1.2 / 2014-04-16
 
 ### New Features

@@ -49,16 +49,10 @@ Then, execute `bundle install`.
 
 ## Configuration
 
-### area
+### area 
 
-Area in which to launch instances.  For the purposes of this driver,
-"area" is defined as the part prior to the first hyphen in an
-availability zone's name; e.g. in "us-central1-b", the area is "us".
-Specifying area but not "zone_name" allows kitchen-gce to avoid
-launching instances into a zone that is down for maintenance.  If
-"any" is specified, kitchen-gce will select a zone from all areas.
-Default: `us` (lowest cost area); valid values: `any`, `asia`,
-`europe`, `us`
+(Deprecated - use equivalent "region" instead.  If both "area" and
+"region" are set, the value of "region" will be used.)
 
 ### autodelete_disk
 
@@ -109,6 +103,16 @@ GCE network that instance will be attached to; default: `default`
 
 Path to the public half of the ssh key that will be deployed to 
 `~username/.ssh/authorized_keys`; see also "username" below.
+
+### region
+
+Region in which to launch instances.  "Region" is defined as the part
+prior to the first hyphen in an availability zone's name; e.g. in
+"us-central1-b", the area is "us".  Specifying region but not
+"zone_name" allows kitchen-gce to avoid launching instances into a
+zone that is down for maintenance.  If "any" is specified, kitchen-gce
+will select a zone from all regions.  Default: `us` (lowest cost
+region); valid values: `any`, `asia`, `europe`, `us`
 
 ### tags
 

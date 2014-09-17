@@ -86,6 +86,7 @@ describe Kitchen::Driver::Gce do
         inst_name: nil,
         machine_type: 'n1-standard-1',
         network: 'default',
+        region: nil,
         tags: [],
         username: ENV['USER'],
         zone_name: nil }
@@ -105,6 +106,7 @@ describe Kitchen::Driver::Gce do
         inst_name: 'ci-instance',
         machine_type: 'n1-highmem-8',
         network: 'dev-net',
+        region: 'asia',
         tags: %w(qa integration),
         username: 'root',
         zone_name: 'europe-west1-a'
@@ -200,6 +202,43 @@ describe Kitchen::Driver::Gce do
         expect(driver.send(:create_instance)).to be_a(
           Fog::Compute::Google::Server)
       end
+
+      it 'sets the region to the default "us"' do
+        driver.send(:create_instance)
+        expect(config[:region]).to eq('us')
+      end
+    end
+
+    context 'area set, region unset' do
+      let(:config) do
+        { area: 'europe',
+          google_client_email: '123456789012@developer.gserviceaccount.com',
+          google_key_location: '/home/user/gce/123456-privatekey.p12',
+          google_project: 'alpha-bravo-123'
+        }
+      end
+
+      it 'sets region to the area value' do
+        driver.send(:create_instance)
+        expect(config[:region]).to eq(config[:area])
+      end
+    end
+
+    context 'area set, region set' do
+      let(:config) do
+        { area: 'fugazi',
+          google_client_email: '123456789012@developer.gserviceaccount.com',
+          google_key_location: '/home/user/gce/123456-privatekey.p12',
+          google_project: 'alpha-bravo-123',
+          region: 'europe'
+        }
+      end
+
+      it 'sets the region independent of the area value' do
+        driver.send(:create_instance)
+        expect(config[:region]).to eq('europe')
+      end
+
     end
   end
 
@@ -254,9 +293,9 @@ describe Kitchen::Driver::Gce do
   end
 
   describe '#select_zone' do
-    context 'when choosing from any area' do
+    context 'when choosing from any region' do
       let(:config) do
-        { area: 'any',
+        { region: 'any',
           google_client_email: '123456789012@developer.gserviceaccount.com',
           google_key_location: '/home/user/gce/123456-privatekey.p12',
           google_project: 'alpha-bravo-123'
@@ -271,9 +310,9 @@ describe Kitchen::Driver::Gce do
       end
     end
 
-    context 'when choosing from the "europe" area' do
+    context 'when choosing from the "europe" region' do
       let(:config) do
-        { area: 'europe',
+        { region: 'europe',
           google_client_email: '123456789012@developer.gserviceaccount.com',
           google_key_location: '/home/user/gce/123456-privatekey.p12',
           google_project: 'alpha-bravo-123'
@@ -287,7 +326,15 @@ describe Kitchen::Driver::Gce do
       end
     end
 
-    context 'when choosing from the default "us" area' do
+    context 'when choosing from the default "us" region' do
+      let(:config) do
+        { region: 'us',
+          google_client_email: '123456789012@developer.gserviceaccount.com',
+          google_key_location: '/home/user/gce/123456-privatekey.p12',
+          google_project: 'alpha-bravo-123'
+        }
+      end
+
       it 'chooses a zone in the us' do
         expect(driver.send(:select_zone)).to satisfy do |zone|
           %w(us-central1-a us-central1-b us-central2-a).include?(zone)
