@@ -44,7 +44,7 @@ describe Kitchen::Driver::Gce do
   let(:driver) do
     d = Kitchen::Driver::Gce.new(config)
     d.instance = instance
-    d.stub(:wait_for_sshd).and_return(true)
+    allow(d).to receive(:wait_for_sshd) { true }
     d
   end
 
@@ -158,8 +158,8 @@ describe Kitchen::Driver::Gce do
 
       let(:driver) do
         d = Kitchen::Driver::Gce.new(config)
-        d.stub(create_instance: server)
-        d.stub(:wait_for_up_instance).and_return(nil)
+        allow(d).to receive(:create_instance) { server }
+        allow(d).to receive(:wait_for_up_instance) { nil }
         d
       end
 
