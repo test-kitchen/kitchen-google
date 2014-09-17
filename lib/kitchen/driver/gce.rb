@@ -27,7 +27,7 @@ module Kitchen
     #
     # @author Andrew Leonard <andy@hurricane-ridge.com>
     class Gce < Kitchen::Driver::SSHBase
-      default_config :area, 'us'
+      default_config :area, 'us-central1'
       default_config :autodelete_disk, true
       default_config :disk_size, 10
       default_config :machine_type, 'n1-standard-1'

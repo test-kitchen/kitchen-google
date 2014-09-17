@@ -107,12 +107,13 @@ Path to the public half of the ssh key that will be deployed to
 ### region
 
 Region in which to launch instances.  "Region" is defined as the part
-prior to the first hyphen in an availability zone's name; e.g. in
-"us-central1-b", the area is "us".  Specifying region but not
-"zone_name" allows kitchen-gce to avoid launching instances into a
+prior to the second hyphen in an availability zone's name; e.g. in
+"us-central1-b", the region is "us-central1".  Specifying region but
+not "zone_name" allows kitchen-gce to avoid launching instances into a
 zone that is down for maintenance.  If "any" is specified, kitchen-gce
-will select a zone from all regions.  Default: `us` (lowest cost
-region); valid values: `any`, `asia`, `europe`, `us`
+will select a zone from all regions.  Default: `us-central1` (lowest
+cost region); valid values: `any`, `asia-east1`, `europe-west1`,
+`us-central1`
 
 ### tags
 
@@ -125,7 +126,7 @@ Username test-kitchen will log into instance as; default: `ENV['USER']`
 ### zone_name
 
 Location into which instances will be launched.  If not specified, a
-zone is chosen from available zones within the "area" (see above).
+zone is chosen from available zones within the "region" (see above).
 
 ## Example
 
@@ -136,11 +137,11 @@ like this:
 ---
 driver_plugin: gce
 driver_config:
-  area: any
   google_client_email: "123456789012@developer.gserviceaccount.com"
   google_key_location: "<%= ENV['HOME']%>/gce/1234567890abcdef1234567890abcdef12345678-privatekey.p12"
   google_project: "alpha-bravo-123"
   network: "kitchenci"
+  region: any
 
 platforms:
 - name: debian-7

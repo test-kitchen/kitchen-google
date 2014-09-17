@@ -80,7 +80,7 @@ describe Kitchen::Driver::Gce do
     context 'with default options' do
 
       defaults = {
-        area: 'us',
+        area: 'us-central1',
         autodelete_disk: true,
         disk_size: 10,
         inst_name: nil,
@@ -100,13 +100,13 @@ describe Kitchen::Driver::Gce do
 
     context 'with overriden options' do
       overrides = {
-        area: 'europe',
+        area: 'europe-west',
         autodelete_disk: false,
         disk_size: 15,
         inst_name: 'ci-instance',
         machine_type: 'n1-highmem-8',
         network: 'dev-net',
-        region: 'asia',
+        region: 'asia-east1',
         tags: %w(qa integration),
         username: 'root',
         zone_name: 'europe-west1-a'
@@ -203,15 +203,15 @@ describe Kitchen::Driver::Gce do
           Fog::Compute::Google::Server)
       end
 
-      it 'sets the region to the default "us"' do
+      it 'sets the region to the default "us-central1"' do
         driver.send(:create_instance)
-        expect(config[:region]).to eq('us')
+        expect(config[:region]).to eq('us-central1')
       end
     end
 
     context 'area set, region unset' do
       let(:config) do
-        { area: 'europe',
+        { area: 'europe-west1',
           google_client_email: '123456789012@developer.gserviceaccount.com',
           google_key_location: '/home/user/gce/123456-privatekey.p12',
           google_project: 'alpha-bravo-123'
@@ -230,13 +230,13 @@ describe Kitchen::Driver::Gce do
           google_client_email: '123456789012@developer.gserviceaccount.com',
           google_key_location: '/home/user/gce/123456-privatekey.p12',
           google_project: 'alpha-bravo-123',
-          region: 'europe'
+          region: 'europe-west1'
         }
       end
 
       it 'sets the region independent of the area value' do
         driver.send(:create_instance)
-        expect(config[:region]).to eq('europe')
+        expect(config[:region]).to eq('europe-west1')
       end
 
     end
@@ -310,32 +310,32 @@ describe Kitchen::Driver::Gce do
       end
     end
 
-    context 'when choosing from the "europe" region' do
+    context 'when choosing from the "europe-west1" region' do
       let(:config) do
-        { region: 'europe',
+        { region: 'europe-west1',
           google_client_email: '123456789012@developer.gserviceaccount.com',
           google_key_location: '/home/user/gce/123456-privatekey.p12',
           google_project: 'alpha-bravo-123'
         }
       end
 
-      it 'chooses a zone in europe' do
+      it 'chooses a zone in europe-west1' do
         expect(driver.send(:select_zone)).to satisfy do |zone|
           %w(europe-west1-a).include?(zone)
         end
       end
     end
 
-    context 'when choosing from the default "us" region' do
+    context 'when choosing from the default "us-central1" region' do
       let(:config) do
-        { region: 'us',
+        { region: 'us-central1',
           google_client_email: '123456789012@developer.gserviceaccount.com',
           google_key_location: '/home/user/gce/123456-privatekey.p12',
           google_project: 'alpha-bravo-123'
         }
       end
 
-      it 'chooses a zone in the us' do
+      it 'chooses a zone in us-central1' do
         expect(driver.send(:select_zone)).to satisfy do |zone|
           %w(us-central1-a us-central1-b us-central2-a).include?(zone)
         end
