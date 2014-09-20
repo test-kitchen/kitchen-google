@@ -1,8 +1,10 @@
-## ???
+## 0.2.0 / 2014-09-20
 
 ### Improvements
 
-* #10: Deprecate "area" in configuration for "region".
+* #10: Deprecate "area" in configuration for "region"
+* #11: Fix name length, via @pdunnavant
+* #12: Generate instance names that are valid for GCE
 
 ## 0.1.2 / 2014-04-16
 

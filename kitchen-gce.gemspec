@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 Gem::Specification.new do |s|
   s.name        = 'kitchen-gce'
-  s.version     = '0.1.2'
-  s.date        = '2014-04-16'
+  s.version     = '0.2.0'
+  s.date        = '2014-09-20'
   s.summary     = 'Kitchen::Driver::Gce'
   s.description = 'A Test-Kitchen driver for Google Compute Engine'
   s.authors     = ['Andrew Leonard']
