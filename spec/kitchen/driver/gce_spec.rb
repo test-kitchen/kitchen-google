@@ -280,13 +280,49 @@ describe Kitchen::Driver::Gce do
 
     context 'with a name 27 characters or longer' do
       let(:instance) do
-        double(name: '123456789012345678901234567')
+        double(name: 'a23456789012345678901234567')
       end
 
       it 'shortens the base name and appends a UUID' do
         expect(driver.send(:generate_inst_name).length).to eq 63
         expect(driver.send(:generate_inst_name)).to match(
-          /^12345678901234567890123456
+          /^a2345678901234567890123456
+            -[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/x)
+      end
+    end
+
+    context 'with a "name" value containing an invalid leading character' do
+      let(:instance) do
+        double(name: '12345')
+      end
+
+      it 'adds a leading "t"' do
+        expect(driver.send(:generate_inst_name)).to match(
+          /^t12345
+            -[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/x)
+      end
+    end
+
+    context 'with a "name" value containing uppercase letters' do
+      let(:instance) do
+        double(name: 'AbCdEf')
+      end
+
+      it 'downcases the "name" characters in the instance name' do
+        expect(driver.send(:generate_inst_name)).to match(
+          /^abcdef
+            -[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/x)
+      end
+    end
+
+    context 'with a name value containing invalid characters' do
+      let(:instance) do
+        double(name: 'a!b@c#d$e%f^g&h*i(j)')
+      end
+
+      it 'replaces the invalid characters with dashes' do
+        expect(driver.send(:generate_inst_name)).to match(
+          /^a-b-c-d-e-f-g-h-i-j-
             -[a-f0-9]{8}-([a-f0-9]{4}-){3}[a-f0-9]{12}$/x)
       end
     end
