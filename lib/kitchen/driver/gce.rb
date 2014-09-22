@@ -33,6 +33,7 @@ module Kitchen
       default_config :machine_type, 'n1-standard-1'
       default_config :network, 'default'
       default_config :inst_name, nil
+      default_config :service_accounts, []
       default_config :tags, []
       default_config :username, ENV['USER']
       default_config :zone_name, nil
@@ -105,6 +106,7 @@ module Kitchen
           disks: [disk.get_as_boot_disk(true, config[:autodelete_disk])],
           machine_type: config[:machine_type],
           network: config[:network],
+          service_accounts: config[:service_accounts],
           tags: config[:tags],
           zone_name: config[:zone_name],
           public_key_path: config[:public_key_path],
