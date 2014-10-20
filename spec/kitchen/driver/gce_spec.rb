@@ -87,6 +87,7 @@ describe Kitchen::Driver::Gce do
         machine_type: 'n1-standard-1',
         network: 'default',
         region: nil,
+        service_accounts: [],
         tags: [],
         username: ENV['USER'],
         zone_name: nil }
@@ -107,6 +108,7 @@ describe Kitchen::Driver::Gce do
         machine_type: 'n1-highmem-8',
         network: 'dev-net',
         region: 'asia-east1',
+        service_accounts: %w(userdata.email compute.readonly),
         tags: %w(qa integration),
         username: 'root',
         zone_name: 'europe-west1-a'
