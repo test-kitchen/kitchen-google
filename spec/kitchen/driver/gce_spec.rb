@@ -49,7 +49,7 @@ describe Kitchen::Driver::Gce do
   end
 
   let(:fog) do
-    Fog::Compute::Google::Mock.new
+    Fog::Compute::Google::Mock.new({})
   end
 
   let(:disk) do
