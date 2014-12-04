@@ -33,7 +33,7 @@ module Kitchen
       default_config :machine_type, 'n1-standard-1'
       default_config :network, 'default'
       default_config :inst_name, nil
-      default_config :service_accounts, []
+      default_config :service_accounts, nil
       default_config :tags, []
       default_config :username, ENV['USER']
       default_config :zone_name, nil

@@ -87,7 +87,7 @@ describe Kitchen::Driver::Gce do
         machine_type: 'n1-standard-1',
         network: 'default',
         region: nil,
-        service_accounts: [],
+        service_accounts: nil,
         tags: [],
         username: ENV['USER'],
         zone_name: nil }
