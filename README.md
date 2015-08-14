@@ -1,6 +1,7 @@
 # Kitchen::Gce - A Test Kitchen Driver for Google Compute Engine
 
-[![Build Status](https://travis-ci.org/anl/kitchen-gce.png?branch=master)](https://travis-ci.org/anl/kitchen-gce) [![Code Climate](https://codeclimate.com/github/anl/kitchen-gce.png)](https://codeclimate.com/github/anl/kitchen-gce)
+[![Build Status](https://travis-ci.org/test-kitchen/kitchen-google.png?branch=master)](https://travis-ci.org/test-kitchen/kitchen-google)
+[![Code Climate](https://codeclimate.com/github/test-kitchen/kitchen-google.png)](https://codeclimate.com/github/test-kitchen/kitchen-google)
 
 This is a [Test Kitchen](https://github.com/opscode/test-kitchen/)
 driver for Google Compute Engine.  While similar to EC2 and other IaaS
