@@ -50,41 +50,41 @@ Then, execute `bundle install`.
 
 ## Configuration
 
-### area 
+### `area`
 
-(Deprecated - use equivalent "region" instead.  If both "area" and
-"region" are set, the value of "region" will be used.)
+Deprecated - use equivalent [`region`](#region) instead.  If both `area` and
+`region` are set, the value of `region` will be used.
 
-### autodelete_disk
+### `autodelete_disk`
 
 Boolean specifying whether or not to automatically delete boot disk
-for test instance.  Default: true
+for test instance.  Default: `true`
 
-### disk_size
+### `disk_size`
 
-Size, in gigabytes of boot disk.  Default: 10.
+Size, in gigabytes, of boot disk.  Default: `10`.
 
-### google_client_email
+### `google_client_email`
 
 **Required** Email address associated with your GCE service account.
 (N.B. - this is not the same as the Google Cloud Platform user's email
 account; should be in the form
 "123456789012@developer.gserviceaccount.com".)
 
-### google_key_location
+### `google_key_location`
 
 **Required** Path to GCE service account key file.
 
-### google_project
+### `google_project`
 
 **Required** Project ID of the GCE project into which test-kitchen
 instances will be launched.
 
-### image_name
+### `image_name`
 
 **Required** Operating system image to deploy.
 
-### inst_name
+### `inst_name`
 
 Name to give to instance; unlike EC2's "Name" tag, this is used as an
 instance identifier and must be unique.  If none is specified, a unique
@@ -92,42 +92,42 @@ name will be auto-generated; note that auto-generated names must be
 used if there is more than one test suite.  Default:
 `<suite>-<platform>-<UUID>`
 
-### machine_type
+### `machine_type`
 
 GCE instance type (size) to launch; default: `n1-standard-1`
 
-### network
+### `network`
 
 GCE network that instance will be attached to; default: `default`
 
-### public_key_path
+### `public_key_path`
 
-Path to the public half of the ssh key that will be deployed to 
-`~username/.ssh/authorized_keys`; see also "username" below.
+Path to the public half of the ssh key that will be deployed to
+`~username/.ssh/authorized_keys`; see also [`username`](#username) below.
 
-### region
+### `region`
 
-Region in which to launch instances.  "Region" is defined as the part
+Region in which to launch instances.  `region` is defined as the part
 prior to the second hyphen in an availability zone's name; e.g. in
-"us-central1-b", the region is "us-central1".  Specifying region but
-not "zone_name" allows kitchen-gce to avoid launching instances into a
-zone that is down for maintenance.  If "any" is specified, kitchen-gce
+`us-central1-b`, the region is `us-central1`.  Specifying region but
+not `zone_name` allows kitchen-gce to avoid launching instances into a
+zone that is down for maintenance.  If `any` is specified, kitchen-gce
 will select a zone from all regions.  Default: `us-central1` (lowest
 cost region); valid values: `any`, `asia-east1`, `europe-west1`,
 `us-central1`
 
-### tags
+### `tags`
 
 Array of tags to associate with instance; default: `[]`
 
-### username
+### `username`
 
 Username test-kitchen will log into instance as; default: `ENV['USER']`
 
-### zone_name
+### `zone_name`
 
 Location into which instances will be launched.  If not specified, a
-zone is chosen from available zones within the "region" (see above).
+zone is chosen from available zones within the [`region`](#region).
 
 ## Example
 
