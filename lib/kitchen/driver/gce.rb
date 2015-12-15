@@ -37,9 +37,10 @@ module Kitchen
       default_config :tags, []
       default_config :username, ENV['USER']
       default_config :zone_name, nil
+      default_config :google_key_location, nil
+      default_config :google_json_key_location, nil
 
       required_config :google_client_email
-      required_config :google_key_location
       required_config :google_project
       required_config :image_name
 
@@ -70,12 +71,20 @@ module Kitchen
       private
 
       def connection
-        Fog::Compute.new(
+        options = {
           provider: 'google',
           google_client_email: config[:google_client_email],
-          google_key_location: config[:google_key_location],
           google_project: config[:google_project]
-        )
+        }
+
+        [
+          :google_key_location,
+          :google_json_key_location
+        ].each do |k|
+          options[k] = config[k] unless config[k].nil?
+        end
+
+        Fog::Compute.new(options)
       end
 
       def create_disk

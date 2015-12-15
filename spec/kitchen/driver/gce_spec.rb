@@ -24,7 +24,6 @@ describe Kitchen::Driver::Gce do
 
   let(:config) do
     { google_client_email: '123456789012@developer.gserviceaccount.com',
-      google_key_location: '/home/user/gce/123456-privatekey.p12',
       google_project: 'alpha-bravo-123'
     }
   end
@@ -43,7 +42,7 @@ describe Kitchen::Driver::Gce do
 
   let(:driver) do
     d = Kitchen::Driver::Gce.new(config)
-    d.instance = instance
+    allow(d).to receive(:instance) { instance }
     allow(d).to receive(:wait_for_sshd) { true }
     d
   end
@@ -90,7 +89,10 @@ describe Kitchen::Driver::Gce do
         service_accounts: nil,
         tags: [],
         username: ENV['USER'],
-        zone_name: nil }
+        zone_name: nil,
+        google_key_location: nil,
+        google_json_key_location: nil
+      }
 
       defaults.each do |k, v|
         it "sets the correct default for #{k}" do
@@ -111,7 +113,9 @@ describe Kitchen::Driver::Gce do
         service_accounts: %w(userdata.email compute.readonly),
         tags: %w(qa integration),
         username: 'root',
-        zone_name: 'europe-west1-a'
+        zone_name: 'europe-west1-a',
+        google_key_location: '/path/to/foo.p12',
+        google_json_key_location: '/path/to/bar.json'
       }
 
       let(:config) { overrides }
