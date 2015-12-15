@@ -39,6 +39,7 @@ module Kitchen
       default_config :zone_name, nil
       default_config :google_key_location, nil
       default_config :google_json_key_location, nil
+      default_config :preemptible, false
 
       required_config :google_client_email
       required_config :google_project
@@ -119,7 +120,9 @@ module Kitchen
           tags: config[:tags],
           zone_name: config[:zone_name],
           public_key_path: config[:public_key_path],
-          username: config[:username]
+          username: config[:username],
+          preemptible: config[:preemptible],
+          on_host_maintenance: config[:preemptible] ? 'TERMINATE': 'MIGRATE'
         )
       end
 

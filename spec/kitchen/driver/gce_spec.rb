@@ -91,7 +91,8 @@ describe Kitchen::Driver::Gce do
         username: ENV['USER'],
         zone_name: nil,
         google_key_location: nil,
-        google_json_key_location: nil
+        google_json_key_location: nil,
+        preemptible: false
       }
 
       defaults.each do |k, v|
@@ -115,7 +116,8 @@ describe Kitchen::Driver::Gce do
         username: 'root',
         zone_name: 'europe-west1-a',
         google_key_location: '/path/to/foo.p12',
-        google_json_key_location: '/path/to/bar.json'
+        google_json_key_location: '/path/to/bar.json',
+        preemptible: true
       }
 
       let(:config) { overrides }
