@@ -40,6 +40,7 @@ module Kitchen
       default_config :google_key_location, nil
       default_config :google_json_key_location, nil
       default_config :preemptible, false
+      default_config :auto_restart, false
 
       required_config :google_client_email
       required_config :google_project
@@ -122,7 +123,8 @@ module Kitchen
           public_key_path: config[:public_key_path],
           username: config[:username],
           preemptible: config[:preemptible],
-          on_host_maintenance: config[:preemptible] ? 'TERMINATE': 'MIGRATE'
+          on_host_maintenance: config[:preemptible] ? 'TERMINATE': 'MIGRATE',
+          auto_restart: config[:auto_restart]
         )
       end
 
