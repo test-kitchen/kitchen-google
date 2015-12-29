@@ -105,7 +105,7 @@ GCE network that instance will be attached to; default: `default`
 If set to `true`, GCE instance will be brought up as a  [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) virtual machine,
 that runs at a much lower price than normal instances. However, Compute 
 Engine might terminate (preempt) these instances if it requires access 
-to those resources for other tasks.; default: `false`
+to those resources for other tasks; default: `false`
 
 ### `public_key_path`
 

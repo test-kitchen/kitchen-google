@@ -92,7 +92,8 @@ describe Kitchen::Driver::Gce do
         zone_name: nil,
         google_key_location: nil,
         google_json_key_location: nil,
-        preemptible: false
+        preemptible: false,
+        auto_restart: false
       }
 
       defaults.each do |k, v|
@@ -117,7 +118,8 @@ describe Kitchen::Driver::Gce do
         zone_name: 'europe-west1-a',
         google_key_location: '/path/to/foo.p12',
         google_json_key_location: '/path/to/bar.json',
-        preemptible: true
+        preemptible: true,
+        auto_restart: false # because of preemptible, see kitchen-google/pull/22
       }
 
       let(:config) { overrides }
@@ -181,9 +183,7 @@ describe Kitchen::Driver::Gce do
       it 'returns nil' do
         expect(driver.send(:create, state)).to equal(nil)
       end
-
     end
-
   end
 
   describe '#create_disk' do
