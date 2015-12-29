@@ -26,7 +26,7 @@ owner's email address).
 
 If you are not using the `public_key_path` setting (see below) and
 have not [set up SSH keys for your GCE
-environment](https://developers.google.com/compute/docs/instances#sshkeys),
+environment](https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys),
 you must also do that prior to using kitchen-gce.  Also, you will
 likely want to add your SSH keys to ssh-agent prior to converging any
 instances.
@@ -100,6 +100,13 @@ GCE instance type (size) to launch; default: `n1-standard-1`
 
 GCE network that instance will be attached to; default: `default`
 
+### `preemptible`
+
+If set to `true`, GCE instance will be brought up as a  [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) virtual machine,
+that runs at a much lower price than normal instances. However, Compute 
+Engine might terminate (preempt) these instances if it requires access 
+to those resources for other tasks.; default: `false`
+
 ### `public_key_path`
 
 Path to the public half of the ssh key that will be deployed to
@@ -147,7 +154,7 @@ driver_config:
 platforms:
 - name: debian-7
   driver_config:
-    image_name: debian-7-wheezy-v20140318
+    image_name: debian-7-wheezy-v20151104
     require_chef_omnibus: true
     public_key_path: '/home/alice/.ssh/google_compute_engine.pub'
     tags: ["somerole"]
