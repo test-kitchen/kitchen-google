@@ -1,3 +1,15 @@
+## 0.3.0 / 2016-01-23
+
+### New Features
+
+* #14: Support service_accounts option in Fog
+* #22: Add JSON credential file and Preemptible VM support
+
+### Improvements
+
+* Move to test-kitchen GitHub org
+* Fixes to tests
+
 ## 0.2.0 / 2014-09-20
 
 ### Improvements
