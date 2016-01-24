@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 Gem::Specification.new do |s|
-  s.name        = 'kitchen-gce'
-  s.version     = '0.2.0'
-  s.date        = '2014-09-20'
+  s.name        = 'kitchen-google'
+  s.version     = '0.3.0'
+  s.date        = '2016-01-23'
   s.summary     = 'Kitchen::Driver::Gce'
   s.description = 'A Test-Kitchen driver for Google Compute Engine'
   s.authors     = ['Andrew Leonard']
   s.email       = 'andy@hurricane-ridge.com'
   s.files       = `git ls-files`.split($/) # rubocop:disable SpecialGlobalVars
-  s.homepage    = 'https://github.com/anl/kitchen-gce'
+  s.homepage    = 'https://github.com/test-kitchen/kitchen-google'
   s.license     = 'Apache 2.0'
 
   s.add_dependency 'fog', '>= 1.31.0'
