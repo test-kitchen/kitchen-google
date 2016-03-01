@@ -12,85 +12,135 @@ providers, GCE has a couple of advantages for Chef cookbook testing:
 
 ## Requirements
 
-Ruby 1.9 or greater.
+### Ruby Version
 
+Ruby 2.0 or greater.
+
+### Google Cloud Platform (GCP) Project
 A [Google Cloud Platform](https://cloud.google.com) account is
 required.  If you do not already have an appropriate "project" in
 which to run your test-kitchen instances, create one, noting the
-"project id".  Then, within the [Google API
-Console](https://code.google.com/apis/console/), create a "service
-account" for the project under the "API Access" tab.  Save the key
-file, and note the email address associated with the service account
-(e.g. 123456789012@developer.gserviceaccount.com - not the project
-owner's email address).
+"project id".
 
-If you are not using the `public_key_path` setting (see below) and
-have not [set up SSH keys for your GCE
-environment](https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys),
-you must also do that prior to using kitchen-gce.  Also, you will
-likely want to add your SSH keys to ssh-agent prior to converging any
-instances.
+### Authentication and Authorization
+
+The [underlying API](https://github.com/google/google-api-ruby-client) this plugin uses relies on the 
+[Google Auth Library](https://github.com/google/google-auth-library-ruby) to handle authentication to the
+Google Cloud API. The auth library expects that there is a JSON credentials file located at:
+
+`~/.config/gcloud/application_default_credentials.json`
+
+The easiest way to create this is to download and install the [Google Cloud SDK](https://cloud.google.com/sdk/) and run the
+`gcloud auth login` command which will create the credentials file for you.
+
+If you already have a file you'd like to use that is in a different location, set the
+`GOOGLE_APPLICATION_CREDENTIALS` environment variable with the full path to that file.
+
+### SSH Keys
+
+In order to bootstrap Linux nodes, you will first need to ensure your SSH
+keys are set up correctly. Ensure your SSH public key is properly entered 
+into your project's Metadata tab in the GCP Console. GCE will add your key
+to the appropriate user's `~/.ssh/authorized_keys` file when Chef first
+connects to perform the bootstrap process.
+
+ * If you don't have one, create a key using `ssh-keygen`
+ * Log in to the GCP console, select your project, go to Compute Engine, and go to the Metadata tab.
+ * Select the "SSH Keys" tab.
+ * Add a new item, and paste in your public key.
+    * Note: to change the username automatically detected for the key, prefix your key with the username
+      you plan to use to connect to a new instance. For example, if you plan to connect
+      as "chefuser", your key should look like: `chefuser:ssh-rsa AAAAB3N...`
+ * Click "Save".
+
+You can find [more information on configuring SSH keys](https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys) in
+the Google Compute Engine documentation.
 
 ## Installation
 
-Assuming you are using Bundler, ensure the Gemfile within your Chef
-cookbook contains at least the following:
+Install the gem with:
 
-```ruby
-source 'https://rubygems.org'
-
-gem 'berkshelf'
-
-group :integration do
-  gem 'kitchen-gce'
-end
+```sh
+gem install kitchen-google
 ```
 
-Then, execute `bundle install`.
+Or, even better, if you're using the ChefDK:
+
+```sh
+chef gem install kitchen-google
+```
+
+If you're using Bundler, simply add it to your Gemfile:
+
+```ruby
+gem "kitchen-google", "~> 1.0"
+```
+
+... and then run `bundle install`.
+
 
 ## Configuration
 
-### `area`
+### `project`
 
-Deprecated - use equivalent [`region`](#region) instead.  If both `area` and
-`region` are set, the value of `region` will be used.
+**Required**. The project ID of the GCP project into which Test Kitchen
+instances will be launched.
+
+### `image_name`
+
+**Required**. The name of the disk image to use as the source image for 
+the boot disk. Example: `centos-6-v20160219`
+
+The GCP project specified with the `project` configuration parameter will
+be searched first. If the image cannot be found and it looks like a common
+public image, the appropriate public project will be searched.
+
+You can override the project in which to search for the image with the
+`image_project` parameter.
+
+### `zone`
+
+**Required if `region` is left blank.** The name of the GCE zone in which to
+launch your instances. 
+
+Example: `us-east1-b`
+
+### `region`
+
+**Required if zone is left blank.** The name of the region in which to
+launch your instances. A zone in the region will be randomly selected.
+
+Example: `us-central1`
+
+This parameter will be ignored if `zone` is specified.
 
 ### `autodelete_disk`
 
 Boolean specifying whether or not to automatically delete boot disk
 for test instance.  Default: `true`
 
+### `auto_migrate`
+
+Boolean specifying whether or not to automatically migrate the instance
+to a host in the event of host maintenance. Default: `false`
+
 ### `disk_size`
 
 Size, in gigabytes, of boot disk.  Default: `10`.
 
-### `google_client_email`
+Some images, such as windows images, have a larger source image size
+and require the disk_size to be the same size or larger than the source. 
+An error message will be displayed to you indicating this requirement
+if necessary.
 
-**Required** Email address associated with your GCE service account.
-(N.B. - this is not the same as the Google Cloud Platform user's email
-account; should be in the form
-"123456789012@developer.gserviceaccount.com".)
+### `email`
 
-### `google_key_location`
+**Required for Windows instances.** The email address of the
+currently-logged-in GCP user.
 
-**Required** Path to GCE service account key file.
-
-### `google_project`
-
-**Required** Project ID of the GCE project into which test-kitchen
-instances will be launched.
-
-### `image_name`
-
-**Required** Operating system image to deploy.
-
-### `inst_name`
-
-Name to give to instance; unlike EC2's "Name" tag, this is used as an
-instance identifier and must be unique.  If none is specified, a unique
-name will be auto-generated; note that auto-generated names must be
-used if there is more than one test suite.  Default:
-`<suite>-<platform>-<UUID>`
+While the credentials file specified in the Authentication and Authorization
+section is used for all API interactions, the email address is required when
+performing the necessary password reset prior to bootstrapping the instance.
 
 ### `machine_type`
 
@@ -107,67 +157,101 @@ that runs at a much lower price than normal instances. However, Compute
 Engine might terminate (preempt) these instances if it requires access 
 to those resources for other tasks; default: `false`
 
-### `public_key_path`
+### `service_account_name`
 
-Path to the public half of the ssh key that will be deployed to
-`~username/.ssh/authorized_keys`; see also [`username`](#username) below.
+The name of the service account to use when enabling account scopes. This
+is usually an email-formatted service account name created via the "Permissions"
+tab of the GCP console.
 
-### `region`
+This is ignored unless you specify any `service_account_scopes`.
 
-Region in which to launch instances.  `region` is defined as the part
-prior to the second hyphen in an availability zone's name; e.g. in
-`us-central1-b`, the region is `us-central1`.  Specifying region but
-not `zone_name` allows kitchen-gce to avoid launching instances into a
-zone that is down for maintenance.  If `any` is specified, kitchen-gce
-will select a zone from all regions.  Default: `us-central1` (lowest
-cost region); valid values: `any`, `asia-east1`, `europe-west1`,
-`us-central1`
+Default: "default"
+
+### `service_account_scopes`
+
+An array of scopes to add to the instance, used to grant additional permissions
+within GCP.
+
+The scopes can either be a full URL (i.e. `https://www.googleapis.com/auth/devstorage.read_write`)
+or the short-name (i.e. `devstorage.read_write`), but aliases (i.e. `storage-rw`) are not permitted.
+
+See the output of `gcloud compute instances create --help` for a full list of scopes.
 
 ### `tags`
 
 Array of tags to associate with instance; default: `[]`
 
-### `username`
+### `use_private_ip`
 
-Username test-kitchen will log into instance as; default: `ENV['USER']`
+Boolean indicating whether or not to connect to the instance using its
+private IP address. If `true`, kitchen-google will also not provision
+a public IP for this instance. Default: `false`
 
-### `zone_name`
+### `wait_time`
 
-Location into which instances will be launched.  If not specified, a
-zone is chosen from available zones within the [`region`](#region).
+Amount of time, in seconds, to wait for any API interactions. Default: 600
 
-## Example
+### `refresh_rate`
 
-An example `.kitchen.yml` file using kitchen-gce might look something
-like this:
+Amount of time, in seconds, to refresh the status of an API interaction. Default: 2
 
-```ruby
+### Transport Settings
+
+Beginning with Test Kitchen 1.4, settings related to the transport (i.e. how to connect
+to the instance) have been moved to the `transport` section of the config, such as the
+username, password, SSH key path, etc.
+
+Therefore, you will need to update the transport section with the username configured
+for the SSH Key you imported into your project metadata as described in the "SSH Keys"
+section above.  For example, if you are connecting as the "chefuser", your .kitchen.yml
+might have a section like this:
+
+```yaml
+transport:
+  username: chefuser
+```
+
+## Example .kitchen.yml
+
+```yaml
 ---
-driver_plugin: gce
-driver_config:
-  google_client_email: "123456789012@developer.gserviceaccount.com"
-  google_key_location: "<%= ENV['HOME']%>/gce/1234567890abcdef1234567890abcdef12345678-privatekey.p12"
-  google_project: "alpha-bravo-123"
-  network: "kitchenci"
-  region: any
+driver:
+  name: gce
+  project: mycompany-test
+  zone: us-east1-c
+  email: me@mycompany.com
+  tags:
+    - devteam
+    - test-kitchen
+  service_account_scopes:
+    - devstorage.read_write
+    - userinfo.email
+
+provisioner:
+  name: chef_zero
+
+transport:
+  username: chefuser
 
 platforms:
-- name: debian-7
-  driver_config:
-    image_name: debian-7-wheezy-v20151104
-    require_chef_omnibus: true
-    public_key_path: '/home/alice/.ssh/google_compute_engine.pub'
-    tags: ["somerole"]
+  - name: centos
+    driver:
+      image_name: centos-6-v20160219
+  - name: windows
+    driver:
+      image_name: windows-server-2012-r2-dc-v20160112
+      disk_size: 50
 
 suites:
-- name: default
-  run_list: ["recipe[somecookbook]"]
-  attributes: {}
+  - name: default
+    run_list:
+      - recipe[gcetest::default]
+    attributes:
 ```
 
 ## Development
 
-Source is hosted on [GitHub](https://github.com/anl/kitchen-gce).
+Source is hosted on [GitHub](https://github.com/test-kitchen/kitchen-google).
 
 * Pull requests are welcome, using topic branches if possible:
 
@@ -175,7 +259,7 @@ Source is hosted on [GitHub](https://github.com/anl/kitchen-gce).
 2. Create a feature branch, commit changes to it and push them.
 3. Submit a pull request.
 
-* Report issues or submit feature requests on [GitHub](https://github.com/anl/kitchen-gce/issues)
+* Report issues or submit feature requests on [GitHub](https://github.com/test-kitchen/kitchen-google/issues)
 
 ## Author, Acknowledgements, Etc.
 
