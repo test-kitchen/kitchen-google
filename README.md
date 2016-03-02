@@ -84,7 +84,13 @@ gem "kitchen-google", "~> 1.0"
 ### `project`
 
 **Required**. The project ID of the GCP project into which Test Kitchen
-instances will be launched.
+instances will be launched. This can be found on the "Manage All Projects"
+screen, found under the "Select a Project" drop-down at the top of the
+GCP console.
+
+Note that this parameter requires the "Project ID", not the "Project Name."
+
+Example: "mycompany-test"
 
 ### `image_name`
 
@@ -210,6 +216,9 @@ might have a section like this:
 transport:
   username: chefuser
 ```
+
+Additionally, if you do not wish to use the standard default SSH key (`~/.ssh/id_rsa`),
+you can set the `ssh_key` parameter in the `transport` section of your .kitchen.yml.
 
 ## Example .kitchen.yml
 
