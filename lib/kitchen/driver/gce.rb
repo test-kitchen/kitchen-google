@@ -31,6 +31,28 @@ module Kitchen
     class Gce < Kitchen::Driver::Base
       attr_accessor :state
 
+      SCOPE_ALIAS_MAP = {
+        "bigquery"           => "bigquery",
+        "cloud-platform"     => "cloud-platform",
+        "compute-ro"         => "compute.readonly",
+        "compute-rw"         => "compute",
+        "datastore"          => "datastore",
+        "logging-write"      => "logging.write",
+        "monitoring"         => "monitoring",
+        "monitoring-write"   => "monitoring.write",
+        "service-control"    => "servicecontrol",
+        "service-management" => "service.management",
+        "sql"                => "sqlservice",
+        "sql-admin"          => "sqlservice.admin",
+        "storage-full"       => "devstorage.full_control",
+        "storage-ro"         => "devstorage.read_only",
+        "storage-rw"         => "devstorage.read_write",
+        "taskqueue"          => "taskqueue",
+        "useraccounts-ro"    => "cloud.useraccounts.readonly",
+        "useraccounts-rw"    => "cloud.useraccounts",
+        "userinfo-email"     => "userinfo.email",
+      }
+
       kitchen_driver_api_version 2
       plugin_version Kitchen::Driver::GCE_VERSION
 
@@ -407,9 +429,18 @@ module Kitchen
 
         service_account        = Google::Apis::ComputeV1::ServiceAccount.new
         service_account.email  = config[:service_account_name]
-        service_account.scopes = config[:service_account_scopes].map { |scope| "https://www.googleapis.com/auth/#{scope}" unless scope.start_with?("https://www.googleapis.com/auth/") }
+        service_account.scopes = config[:service_account_scopes].map { |scope| service_account_scope_url(scope) }
 
         Array(service_account)
+      end
+
+      def service_account_scope_url(scope)
+        return scope if scope.start_with?("https://www.googleapis.com/auth/")
+        "https://www.googleapis.com/auth/#{translate_scope_alias(scope)}"
+      end
+
+      def translate_scope_alias(scope_alias)
+        SCOPE_ALIAS_MAP.fetch(scope_alias, scope_alias)
       end
 
       def instance_tags

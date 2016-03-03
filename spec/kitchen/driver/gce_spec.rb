@@ -771,7 +771,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#instance_service_accounts_for' do
+  describe '#instance_service_accounts' do
     it "returns nil if service_account_scopes is nil" do
       allow(driver).to receive(:config).and_return({})
       expect(driver.instance_service_accounts).to eq(nil)
@@ -788,12 +788,36 @@ describe Kitchen::Driver::Gce do
       allow(driver).to receive(:config).and_return(service_account_name: "account_name", service_account_scopes: %w{scope1 scope2})
       expect(Google::Apis::ComputeV1::ServiceAccount).to receive(:new).and_return(service_account)
       expect(service_account).to receive(:email=).with("account_name")
+      expect(driver).to receive(:service_account_scope_url).with("scope1").and_return("https://www.googleapis.com/auth/scope1")
+      expect(driver).to receive(:service_account_scope_url).with("scope2").and_return("https://www.googleapis.com/auth/scope2")
       expect(service_account).to receive(:scopes=).with([
         "https://www.googleapis.com/auth/scope1",
         "https://www.googleapis.com/auth/scope2",
       ])
 
       expect(driver.instance_service_accounts).to eq([service_account])
+    end
+  end
+
+  describe '#service_account_scope_url' do
+    it "returns the passed-in scope if it already looks like a scope URL" do
+      scope = "https://www.googleapis.com/auth/fake_scope"
+      expect(driver.service_account_scope_url(scope)).to eq(scope)
+    end
+
+    it "returns a properly-formatted scope URL if a short-name or alias is provided" do
+      expect(driver).to receive(:translate_scope_alias).with("scope_alias").and_return("real_scope")
+      expect(driver.service_account_scope_url("scope_alias")).to eq("https://www.googleapis.com/auth/real_scope")
+    end
+  end
+
+  describe '#translate_scope_alias' do
+    it "returns a scope for a given alias" do
+      expect(driver.translate_scope_alias("storage-rw")).to eq("devstorage.read_write")
+    end
+
+    it "returns the passed-in scope alias if nothing matches in the alias map" do
+      expect(driver.translate_scope_alias("fake_scope")).to eq("fake_scope")
     end
   end
 

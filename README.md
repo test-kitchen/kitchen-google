@@ -199,8 +199,8 @@ Default: "default"
 An array of scopes to add to the instance, used to grant additional permissions
 within GCP.
 
-The scopes can either be a full URL (i.e. `https://www.googleapis.com/auth/devstorage.read_write`)
-or the short-name (i.e. `devstorage.read_write`), but aliases (i.e. `storage-rw`) are not permitted.
+The scopes can either be a full URL (i.e. `https://www.googleapis.com/auth/devstorage.read_write`),
+the short-name (i.e. `devstorage.read_write`), or a gcloud alias (i.e. `storage-rw`).
 
 See the output of `gcloud compute instances create --help` for a full list of scopes.
 
