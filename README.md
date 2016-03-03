@@ -146,6 +146,12 @@ This parameter will be ignored if `zone` is specified.
 Boolean specifying whether or not to automatically delete boot disk
 for test instance.  Default: `true`
 
+NOTE: If you set this to false, once Test Kitchen destroys your instance,
+the boot disk used will remain in your project. You will need to manually delete it to
+avoid consuming unused resources by either using the `gcloud compute disks delete`
+command in the GCP SDK or by using `knife google disk delete` from
+[knife-google](https://github.com/chef/knife-google).
+
 ### `auto_migrate`
 
 Boolean specifying whether or not to automatically migrate the instance
