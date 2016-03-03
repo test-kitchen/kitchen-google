@@ -152,7 +152,7 @@ module Kitchen
       def update_windows_password(server_name)
         return unless winrm_transport?
 
-        username = instance.transport.send(:config)[:username] #TODO: eliminate this access-a-private-method hack once a username method exists on transports
+        username = instance.transport[:username]
 
         info("Resetting the Windows password for user #{username} on #{server_name}...")
 
