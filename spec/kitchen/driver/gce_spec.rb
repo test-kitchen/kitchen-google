@@ -275,9 +275,17 @@ describe Kitchen::Driver::Gce do
   describe '#connection' do
     it "returns a properly configured ComputeService" do
       compute_service = double("compute_service")
+      client_options  = double("client_options")
+
+      expect(Google::Apis::ClientOptions).to receive(:new).and_return(client_options)
+      expect(client_options).to receive(:application_name=).with("kitchen-google")
+      expect(client_options).to receive(:application_version=).with(Kitchen::Driver::GCE_VERSION)
+
       expect(Google::Apis::ComputeV1::ComputeService).to receive(:new).and_return(compute_service)
       expect(driver).to receive(:authorization).and_return("authorization_object")
       expect(compute_service).to receive(:authorization=).with("authorization_object")
+      expect(compute_service).to receive(:client_options=).with(client_options)
+
       expect(driver.connection).to eq(compute_service)
     end
   end
