@@ -111,7 +111,7 @@ GCP console.
 
 Note that this parameter requires the "Project ID", not the "Project Name."
 
-Example: "mycompany-test"
+Example: "funky-penguin-12345"
 
 ### `image_name`
 
