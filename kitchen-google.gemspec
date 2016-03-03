@@ -5,8 +5,8 @@ Gem::Specification.new do |s|
   s.date        = "2016-01-23"
   s.summary     = "Kitchen::Driver::Gce"
   s.description = "A Test-Kitchen driver for Google Compute Engine"
-  s.authors     = ["Andrew Leonard"]
-  s.email       = "andy@hurricane-ridge.com"
+  s.authors     = ["Andrew Leonard", "Chef Partner Engineering"]
+  s.email       = ["andy@hurricane-ridge.com", "partnereng@chef.io"]
   s.files       = `git ls-files`.split($/)
   s.homepage    = "https://github.com/test-kitchen/kitchen-google"
   s.license     = "Apache 2.0"
