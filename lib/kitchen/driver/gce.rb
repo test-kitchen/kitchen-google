@@ -137,6 +137,7 @@ module Kitchen
       end
 
       def validate!
+        raise "Project #{config[:project]} is not a valid project" unless valid_project?
         raise "Either zone or region must be specified" unless config[:zone] || config[:region]
         raise "'any' is no longer a valid region" if config[:region] == "any"
         raise "Zone #{config[:zone]} is not a valid zone" if config[:zone] && !valid_zone?
@@ -195,10 +196,15 @@ module Kitchen
 
       def check_api_call(&block)
         block.call
-      rescue Google::Apis::ClientError
+      rescue Google::Apis::ClientError => e
+        debug("API error: #{e.message}")
         false
       else
         true
+      end
+
+      def valid_project?
+        check_api_call { connection.get_project(project) }
       end
 
       def valid_machine_type?

@@ -189,6 +189,7 @@ describe Kitchen::Driver::Gce do
   describe '#validate!' do
     let(:config) do
       {
+        project:      "test_project",
         zone:         "test_zone",
         machine_type: "test_machine_type",
         disk_type:    "test_disk_type",
@@ -197,6 +198,7 @@ describe Kitchen::Driver::Gce do
     end
 
     before do
+      allow(driver).to receive(:valid_project?).and_return(true)
       allow(driver).to receive(:valid_zone?).and_return(true)
       allow(driver).to receive(:valid_region?).and_return(true)
       allow(driver).to receive(:valid_machine_type?).and_return(true)
@@ -249,6 +251,11 @@ describe Kitchen::Driver::Gce do
         expect(driver).to receive(:valid_region?).and_return(false)
         expect { driver.validate! }.to raise_error(RuntimeError, "Region test_region is not a valid region")
       end
+    end
+
+    it "raises an exception if the project is invalid" do
+      expect(driver).to receive(:valid_project?).and_return(false)
+      expect { driver.validate! }.to raise_error(RuntimeError, "Project test_project is not a valid project")
     end
 
     it "raises an exception if the machine_type is invalid" do
@@ -341,7 +348,8 @@ describe Kitchen::Driver::Gce do
   end
 
   describe '#check_api_call' do
-    it "returns false if the block raises a ClientError" do
+    it "returns false and logs a debug message if the block raises a ClientError" do
+      expect(driver).to receive(:debug).with("API error: whoops")
       expect(driver.check_api_call { raise Google::Apis::ClientError.new("whoops") }).to eq(false)
     end
 
