@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
+$:.push File.expand_path("../lib", __FILE__)
+require "kitchen/driver/gce_version"
+
 Gem::Specification.new do |s|
   s.name        = "kitchen-google"
-  s.version     = "0.3.0"
-  s.date        = "2016-01-23"
+  s.version     = Kitchen::Driver::GCE_VERSION
+  s.date        = "2016-03-10"
   s.summary     = "Kitchen::Driver::Gce"
   s.description = "A Test-Kitchen driver for Google Compute Engine"
   s.authors     = ["Andrew Leonard", "Chef Partner Engineering"]
