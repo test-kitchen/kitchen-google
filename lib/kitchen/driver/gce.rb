@@ -195,7 +195,7 @@ module Kitchen
       end
 
       def check_api_call(&block)
-        block.call
+        yield
       rescue Google::Apis::ClientError => e
         debug("API error: #{e.message}")
         false
@@ -471,7 +471,7 @@ module Kitchen
         begin
           Timeout.timeout(wait_time) do
             loop do
-              item = block.call
+              item = yield
               current_status = item.status
 
               unless last_status == current_status
