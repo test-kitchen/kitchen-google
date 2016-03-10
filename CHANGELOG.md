@@ -1,3 +1,17 @@
+## 1.0.0 / 2016-03-10
+
+### New Features
+
+ * #30: use of gcloud authentication files instead of requiring new service accounts
+ * #30: support for service account scope aliases in addition to regular full names/URLs
+ * #30: support for automated public project searching for well-known disk images
+
+### Improvements
+
+ * #30: rewrite using the google-api-client
+ * #30: use of the new Test Kitchen 1.4+ transport plugins
+ * #30: additional user feedback during API interactions
+
 ## 0.3.0 / 2016-01-23
 
 ### New Features
