@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency "bundler"
   s.add_development_dependency "pry"
-  s.add_development_dependency "rake"
+  s.add_development_dependency "rake", "~> 10.5"
   s.add_development_dependency "rspec"
   s.add_development_dependency "rubocop"
 
