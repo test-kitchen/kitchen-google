@@ -765,24 +765,58 @@ describe Kitchen::Driver::Gce do
     it "returns a properly-configured scheduling object" do
       scheduling = double("scheduling")
 
-      allow(driver).to receive(:config).and_return(auto_restart: true, preemptible: false)
+      expect(driver).to receive(:auto_restart?).and_return("restart")
+      expect(driver).to receive(:preemptible?).and_return("preempt")
       expect(driver).to receive(:migrate_setting).and_return("host_maintenance")
       expect(Google::Apis::ComputeV1::Scheduling).to receive(:new).and_return(scheduling)
-      expect(scheduling).to receive(:automatic_restart=).with("true")
-      expect(scheduling).to receive(:preemptible=).with("false")
+      expect(scheduling).to receive(:automatic_restart=).with("restart")
+      expect(scheduling).to receive(:preemptible=).with("preempt")
       expect(scheduling).to receive(:on_host_maintenance=).with("host_maintenance")
       expect(driver.instance_scheduling).to eq(scheduling)
     end
   end
 
+  describe '#preemptible?' do
+    it "returns the preemptible setting from the config" do
+      expect(driver).to receive(:config).and_return(preemptible: "test_preempt")
+      expect(driver.preemptible?).to eq("test_preempt")
+    end
+  end
+
+  describe '#auto_migrate?' do
+    it "returns false if the instance is preemptible" do
+      expect(driver).to receive(:preemptible?).and_return(true)
+      expect(driver.auto_migrate?).to eq(false)
+    end
+
+    it "returns the setting from the config if preemptible is false" do
+      expect(driver).to receive(:config).and_return(auto_migrate: "test_migrate")
+      expect(driver).to receive(:preemptible?).and_return(false)
+      expect(driver.auto_migrate?).to eq("test_migrate")
+    end
+  end
+
+  describe '#auto_restart?' do
+    it "returns false if the instance is preemptible" do
+      expect(driver).to receive(:preemptible?).and_return(true)
+      expect(driver.auto_restart?).to eq(false)
+    end
+
+    it "returns the setting from the config if preemptible is false" do
+      expect(driver).to receive(:config).and_return(auto_restart: "test_restart")
+      expect(driver).to receive(:preemptible?).and_return(false)
+      expect(driver.auto_restart?).to eq("test_restart")
+    end
+  end
+
   describe '#migrate_setting' do
     it "returns MIGRATE if auto_migrate is true" do
-      expect(driver).to receive(:config).and_return(auto_migrate: true)
+      expect(driver).to receive(:auto_migrate?).and_return(true)
       expect(driver.migrate_setting).to eq("MIGRATE")
     end
 
     it "returns TERMINATE if auto_migrate is false" do
-      expect(driver).to receive(:config).and_return(auto_migrate: false)
+      expect(driver).to receive(:auto_migrate?).and_return(false)
       expect(driver.migrate_setting).to eq("TERMINATE")
     end
   end
