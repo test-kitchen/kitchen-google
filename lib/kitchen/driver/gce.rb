@@ -67,6 +67,7 @@ module Kitchen
       default_config :disk_type, "pd-standard"
       default_config :machine_type, "n1-standard-1"
       default_config :network, "default"
+      default_config :subnet, nil
       default_config :inst_name, nil
       default_config :service_account_name, "default"
       default_config :service_account_scopes, []
@@ -145,6 +146,7 @@ module Kitchen
         raise "Machine type #{config[:machine_type]} is not valid" unless valid_machine_type?
         raise "Disk type #{config[:disk_type]} is not valid" unless valid_disk_type?
         raise "Network #{config[:network]} is not valid" unless valid_network?
+        raise "Subnet #{config[:subnet]} is not valid" if config[:subnet] and !valid_subnet?
         raise "Email address of GCE user is not set" if winrm_transport? && config[:email].nil?
 
         warn("Both zone and region specified - region will be ignored.") if config[:zone] && config[:region]
@@ -217,6 +219,11 @@ module Kitchen
         check_api_call { connection.get_network(project, config[:network]) }
       end
 
+      def valid_subnet?
+        return false if config[:subnet].nil?
+        check_api_call { connection.get_subnetwork(project, region, config[:subnet]) }
+      end
+
       def valid_zone?
         return false if config[:zone].nil?
         check_api_call { connection.get_zone(project, config[:zone]) }
@@ -245,7 +252,11 @@ module Kitchen
       end
 
       def region
-        config[:region]
+        config[:region].nil? ? region_for_zone : config[:region]
+      end
+
+      def region_for_zone
+        @region_for_zone ||= connection.get_zone(project, zone).region.split("/").last
       end
 
       def zone
@@ -403,6 +414,7 @@ module Kitchen
       def instance_network_interfaces
         interface                = Google::Apis::ComputeV1::NetworkInterface.new
         interface.network        = network_url
+        interface.subnetwork     = subnet_url if subnet_url
         interface.access_configs = interface_access_configs
 
         Array(interface)
@@ -410,6 +422,12 @@ module Kitchen
 
       def network_url
         "projects/#{project}/global/networks/#{config[:network]}"
+      end
+
+      def subnet_url
+        return unless config[:subnet]
+
+        "projects/#{project}/regions/#{region}/subnetworks/#{config[:subnet]}"
       end
 
       def interface_access_configs

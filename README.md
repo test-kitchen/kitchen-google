@@ -183,6 +183,10 @@ GCE instance type (size) to launch; default: `n1-standard-1`
 
 GCE network that instance will be attached to; default: `default`
 
+### `subnet`
+
+GCE subnetwork that instance will be attached to. Only applies to custom networks.
+
 ### `preemptible`
 
 If set to `true`, GCE instance will be brought up as a  [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) virtual machine,
