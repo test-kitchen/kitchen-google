@@ -71,6 +71,7 @@ describe Kitchen::Driver::Gce do
     allow(driver).to receive(:instance).and_return(instance)
     allow(driver).to receive(:project).and_return("test_project")
     allow(driver).to receive(:zone).and_return("test_zone")
+    allow(driver).to receive(:region).and_return("test_region")
   end
 
   it "driver API version is 2" do
@@ -204,6 +205,7 @@ describe Kitchen::Driver::Gce do
       allow(driver).to receive(:valid_machine_type?).and_return(true)
       allow(driver).to receive(:valid_disk_type?).and_return(true)
       allow(driver).to receive(:valid_network?).and_return(true)
+      allow(driver).to receive(:valid_subnet?).and_return(true)
       allow(driver).to receive(:winrm_transport?).and_return(false)
       allow(driver).to receive(:config).and_return(config)
     end
@@ -250,6 +252,24 @@ describe Kitchen::Driver::Gce do
       it "raises an exception if the region is not valid" do
         expect(driver).to receive(:valid_region?).and_return(false)
         expect { driver.validate! }.to raise_error(RuntimeError, "Region test_region is not a valid region")
+      end
+    end
+
+    context "when subnet is set" do
+      let(:config) do
+        {
+          project:      "test_project",
+          zone:         "test_zone",
+          machine_type: "test_machine_type",
+          disk_type:    "test_disk_type",
+          network:      "test_network",
+          subnet:       "test_subnet",
+        }
+      end
+
+      it "raises an exception if the subnet is invalid" do
+        expect(driver).to receive(:valid_subnet?).and_return(false)
+        expect { driver.validate! }.to raise_error(RuntimeError, "Subnet test_subnet is not valid")
       end
     end
 
@@ -372,6 +392,11 @@ describe Kitchen::Driver::Gce do
     it_behaves_like "a validity checker", :network, :get_network, "test_project"
   end
 
+  describe '#valid_subnet?' do
+    subject { driver.valid_subnet? }
+    it_behaves_like "a validity checker", :subnet, :get_subnetwork, "test_project", "test_region"
+  end
+
   describe '#valid_zone?' do
     subject { driver.valid_zone? }
     it_behaves_like "a validity checker", :zone, :get_zone, "test_project"
@@ -414,9 +439,28 @@ describe Kitchen::Driver::Gce do
   end
 
   describe '#region' do
-    it "returns the region from the config" do
-      expect(driver).to receive(:config).and_return(region: "my_region")
+    it "returns the region from the config if specified" do
+      allow(driver).to receive(:region).and_call_original
+      allow(driver).to receive(:config).and_return(region: "my_region")
       expect(driver.region).to eq("my_region")
+    end
+
+    it "returns the region for the zone if no region is specified" do
+      allow(driver).to receive(:region).and_call_original
+      allow(driver).to receive(:config).and_return({})
+      expect(driver).to receive(:region_for_zone).and_return("zone_region")
+      expect(driver.region).to eq("zone_region")
+    end
+  end
+
+  describe '#region_for_zone' do
+    it "returns the region for a given zone" do
+      connection = double("connection")
+      zone_obj   = double("zone_obj", region: "/path/to/test_region")
+
+      expect(driver).to receive(:connection).and_return(connection)
+      expect(connection).to receive(:get_zone).with(project, zone).and_return(zone_obj)
+      expect(driver.region_for_zone).to eq("test_region")
     end
   end
 
@@ -722,17 +766,45 @@ describe Kitchen::Driver::Gce do
   end
 
   describe '#instance_network_interfaces' do
-    it "returns an array containing a properly-formatted interface" do
-      interface = double("interface")
+    let(:interface) { double("interface") }
 
-      expect(driver).to receive(:network_url).and_return("network_url")
-      expect(driver).to receive(:interface_access_configs).and_return("access_configs")
+    before do
+      allow(Google::Apis::ComputeV1::NetworkInterface).to receive(:new).and_return(interface)
+      allow(driver).to receive(:network_url)
+      allow(driver).to receive(:subnet_url)
+      allow(driver).to receive(:interface_access_configs)
+      allow(interface).to receive(:network=)
+      allow(interface).to receive(:subnetwork=)
+      allow(interface).to receive(:access_configs=)
+    end
 
+    it "creates a network interface object and returns it" do
       expect(Google::Apis::ComputeV1::NetworkInterface).to receive(:new).and_return(interface)
-      expect(interface).to receive(:network=).with("network_url")
-      expect(interface).to receive(:access_configs=).with("access_configs")
-
       expect(driver.instance_network_interfaces).to eq([interface])
+    end
+
+    it "sets the network" do
+      expect(driver).to receive(:network_url).and_return("network_url")
+      expect(interface).to receive(:network=).with("network_url")
+      driver.instance_network_interfaces
+    end
+
+    it "sets the access configs" do
+      expect(driver).to receive(:interface_access_configs).and_return("access_configs")
+      expect(interface).to receive(:access_configs=).with("access_configs")
+      driver.instance_network_interfaces
+    end
+
+    it "does not set a subnetwork by default" do
+      allow(driver).to receive(:subnet_url).and_return(nil)
+      expect(interface).not_to receive(:subnetwork=)
+      driver.instance_network_interfaces
+    end
+
+    it "sets a subnetwork if one was specified" do
+      allow(driver).to receive(:subnet_url).and_return("subnet_url")
+      expect(interface).to receive(:subnetwork=).with("subnet_url")
+      driver.instance_network_interfaces
     end
   end
 
@@ -740,6 +812,19 @@ describe Kitchen::Driver::Gce do
     it "returns a network URL" do
       expect(driver).to receive(:config).and_return(network: "test_network")
       expect(driver.network_url).to eq("projects/test_project/global/networks/test_network")
+    end
+  end
+
+  describe '#subnet_url_for' do
+    it "returns nil if no subnet is specified" do
+      expect(driver).to receive(:config).and_return({})
+      expect(driver.subnet_url).to eq(nil)
+    end
+
+    it "returns a properly-formatted subnet URL" do
+      allow(driver).to receive(:config).and_return(subnet: "test_subnet")
+      expect(driver).to receive(:region).and_return("test_region")
+      expect(driver.subnet_url).to eq("projects/test_project/regions/test_region/subnetworks/test_subnet")
     end
   end
 
