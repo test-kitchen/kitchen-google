@@ -150,6 +150,8 @@ module Kitchen
         raise "Email address of GCE user is not set" if winrm_transport? && config[:email].nil?
 
         warn("Both zone and region specified - region will be ignored.") if config[:zone] && config[:region]
+        warn("Auto-migrate disabled for preemptible instance") if preemptible? && config[:auto_migrate]
+        warn("Auto-restart disabled for preemptible instance") if preemptible? && config[:auto_restart]
       end
 
       def connection
@@ -442,14 +444,26 @@ module Kitchen
 
       def instance_scheduling
         Google::Apis::ComputeV1::Scheduling.new.tap do |scheduling|
-          scheduling.automatic_restart   = config[:auto_restart].to_s
-          scheduling.preemptible         = config[:preemptible].to_s
+          scheduling.automatic_restart   = auto_restart?.to_s
+          scheduling.preemptible         = preemptible?.to_s
           scheduling.on_host_maintenance = migrate_setting
         end
       end
 
+      def preemptible?
+        config[:preemptible]
+      end
+
+      def auto_migrate?
+        preemptible? ? false : config[:auto_migrate]
+      end
+
+      def auto_restart?
+        preemptible? ? false : config[:auto_restart]
+      end
+
       def migrate_setting
-        config[:auto_migrate] ? "MIGRATE" : "TERMINATE"
+        auto_migrate? ? "MIGRATE" : "TERMINATE"
       end
 
       def instance_service_accounts
