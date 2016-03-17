@@ -168,7 +168,7 @@ module Kitchen
         raise "Disk type #{config[:disk_type]} is not valid" unless valid_disk_type?
         raise "Disk image #{config[:image_name]} is not valid - check your image name and image project" if boot_disk_source_image.nil?
         raise "Network #{config[:network]} is not valid" unless valid_network?
-        raise "Subnet #{config[:subnet]} is not valid" if config[:subnet] and !valid_subnet?
+        raise "Subnet #{config[:subnet]} is not valid" if config[:subnet] && !valid_subnet?
         raise "Email address of GCE user is not set" if winrm_transport? && config[:email].nil?
 
         warn("Both zone and region specified - region will be ignored.") if config[:zone] && config[:region]
