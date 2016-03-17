@@ -125,6 +125,10 @@ public image, the appropriate public project will be searched.
 You can override the project in which to search for the image with the
 `image_project` parameter.
 
+Additionally, you can supply an image alias supported by the `gcloud compute instances create`
+command and kitchen-google will find the latest version of that image to use.
+For a full list of aliases, see the output of `gcloud compute instances create --help`.
+
 ### `zone`
 
 **Required if `region` is left blank.** The name of the GCE zone in which to
