@@ -1,3 +1,10 @@
+## 1.1.0 / 2016-03-17
+
+ * #32: Rubocop and Rake fixes to address Travis test issues
+ * #33: Automatically disable auto-restart and auto-migrate when using preemptible instances
+ * #34: Support for using subnetworks
+ * #35: Support for gcloud-style image aliases (i.e. "centos-7" will get you the latest CentOS image)
+
 ## 1.0.0 / 2016-03-10
 
 ### New Features
