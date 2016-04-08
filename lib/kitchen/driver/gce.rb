@@ -112,7 +112,7 @@ module Kitchen
 
         validate!
 
-        server_name = generate_server_name
+        server_name = inst_name
 
         info("Creating GCE instance <#{server_name}> in project #{project}, zone #{zone}...")
         operation = connection.insert_instance(project, zone, create_instance_object(server_name))
@@ -277,6 +277,10 @@ module Kitchen
 
       def region
         config[:region].nil? ? region_for_zone : config[:region]
+      end
+
+      def inst_name
+        config[:inst_name].nil? ? generate_server_name : config[:inst_name]
       end
 
       def region_for_zone
