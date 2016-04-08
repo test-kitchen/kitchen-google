@@ -92,6 +92,7 @@ describe Kitchen::Driver::Gce do
     before do
       allow(driver).to receive(:validate!)
       allow(driver).to receive(:connection).and_return(connection)
+      allow(driver).to receive(:inst_name)
       allow(driver).to receive(:generate_server_name)
       allow(driver).to receive(:wait_for_operation)
       allow(driver).to receive(:server_instance)
@@ -108,13 +109,13 @@ describe Kitchen::Driver::Gce do
     end
 
     it "generates a unique server name and sets the state" do
-      expect(driver).to receive(:generate_server_name).and_return("server_1")
+      expect(driver).to receive(:inst_name).and_return("server_1")
       driver.create(state)
       expect(state[:server_name]).to eq("server_1")
     end
 
     it "creates the instance via the API and waits for it to complete" do
-      expect(driver).to receive(:generate_server_name).and_return("server_1")
+      expect(driver).to receive(:inst_name).and_return("server_1")
       expect(driver).to receive(:create_instance_object).with("server_1").and_return("create_obj")
       expect(connection).to receive(:insert_instance).with("test_project", "test_zone", "create_obj").and_return(operation)
       expect(driver).to receive(:wait_for_operation).with(operation)
@@ -123,7 +124,7 @@ describe Kitchen::Driver::Gce do
     end
 
     it "sets the correct data in the state object" do
-      expect(driver).to receive(:generate_server_name).and_return("server_1")
+      expect(driver).to receive(:inst_name).and_return("server_1")
       expect(driver).to receive(:server_instance).with("server_1").and_return("server_obj")
       expect(driver).to receive(:ip_address_for).with("server_obj").and_return("1.2.3.4")
       driver.create(state)
@@ -134,7 +135,7 @@ describe Kitchen::Driver::Gce do
     end
 
     it "updates the windows password" do
-      expect(driver).to receive(:generate_server_name).and_return("server_1")
+      expect(driver).to receive(:inst_name).and_return("server_1")
       expect(driver).to receive(:update_windows_password).with("server_1")
       driver.create(state)
     end
@@ -596,6 +597,26 @@ describe Kitchen::Driver::Gce do
 
       expect(network_interface).to receive(:access_configs).and_raise(NoMethodError)
       expect { driver.public_ip_for(server) }.to raise_error(RuntimeError, "Unable to determine public IP for instance")
+    end
+  end
+
+  describe '#inst_name' do
+    before do
+      allow(driver).to receive(:config).and_return(config)
+    end
+
+    context "when the user supplies an instance name" do
+      let(:config) { { inst_name: "Instance" } }
+
+      it "returns inst_name if inst_name exists" do
+        expect(driver.inst_name).to eq("Instance")
+      end
+    end
+
+    it "generates and returns a server name if inst_name is nil" do
+      expect(instance).to receive(:name).and_return("ABC123")
+      expect(SecureRandom).to receive(:hex).with(3).and_return("abcdef")
+      expect(driver.inst_name).to eq("tk-abc123-abcdef")
     end
   end
 
