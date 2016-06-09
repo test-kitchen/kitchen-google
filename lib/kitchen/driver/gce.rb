@@ -491,8 +491,6 @@ module Kitchen
       end
 
       def interface_access_configs
-        return [] if config[:use_private_ip]
-
         access_config        = Google::Apis::ComputeV1::AccessConfig.new
         access_config.name   = "External NAT"
         access_config.type   = "ONE_TO_ONE_NAT"
