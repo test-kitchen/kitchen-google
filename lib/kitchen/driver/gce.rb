@@ -99,6 +99,7 @@ module Kitchen
       default_config :image_project, nil
       default_config :email, nil
       default_config :use_private_ip, false
+      default_config :add_access_config, true
       default_config :wait_time, 600
       default_config :refresh_rate, 2
 
@@ -491,6 +492,8 @@ module Kitchen
       end
 
       def interface_access_configs
+        return [] if config[:add_access_config] == false
+
         access_config        = Google::Apis::ComputeV1::AccessConfig.new
         access_config.name   = "External NAT"
         access_config.type   = "ONE_TO_ONE_NAT"

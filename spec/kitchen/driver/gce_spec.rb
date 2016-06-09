@@ -906,7 +906,7 @@ describe Kitchen::Driver::Gce do
   end
 
   describe '#interface_access_configs' do
-    it "returns a properly-configured access config object" do
+    it "returns a properly-configured access config object if not specified" do
       access_config = double("access_config")
 
       expect(driver).to receive(:config).and_return({})
@@ -917,8 +917,8 @@ describe Kitchen::Driver::Gce do
       expect(driver.interface_access_configs).to eq([access_config])
     end
 
-    it "returns an empty array if use_private_ip is true" do
-      expect(driver).to receive(:config).and_return(use_private_ip: true)
+    it "returns an empty array if add_access_config is false" do
+      expect(driver).to receive(:config).and_return(add_access_config: false)
       expect(driver.interface_access_configs).to eq([])
     end
   end
