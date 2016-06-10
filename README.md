@@ -225,8 +225,11 @@ Array of tags to associate with instance; default: `[]`
 ### `use_private_ip`
 
 Boolean indicating whether or not to connect to the instance using its
-private IP address. If `true`, kitchen-google will also not provision
-a public IP for this instance. Default: `false`
+private IP address. Default: `false`
+
+### `add_access_config`
+
+Boolean indicating whether to setup a [network access config](https://cloud.google.com/sdk/gcloud/reference/compute/instances/add-access-config) for the instance.  This also sets up a public IP.  Default: `true`
 
 ### `wait_time`
 
