@@ -381,7 +381,7 @@ describe Kitchen::Driver::Gce do
     end
 
     it "raises an exception if the block raises something other than a ClientError" do
-      expect { driver.check_api_call { raise RuntimeError.new("whoops") } }.to raise_error(RuntimeError)
+      expect { driver.check_api_call { raise "whoops" } }.to raise_error(RuntimeError)
     end
 
     it "returns true if the block does not raise an exception" do
@@ -832,7 +832,7 @@ describe Kitchen::Driver::Gce do
 
     it "accepts custom metadata" do
       foo = double("foo")
-      config[:metadata] = { 'foo' => 'bar' }
+      config[:metadata] = { "foo" => "bar" }
 
       expect(instance).to receive(:name).and_return("instance_name")
       expect(driver).to receive(:env_user).and_return("env_user")
