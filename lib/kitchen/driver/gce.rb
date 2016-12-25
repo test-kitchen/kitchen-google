@@ -101,6 +101,7 @@ module Kitchen
       default_config :use_private_ip, false
       default_config :wait_time, 600
       default_config :refresh_rate, 2
+      default_config :metadata, {}
 
       def name
         "Google Compute (GCE)"
@@ -450,13 +451,15 @@ module Kitchen
         "zones/#{zone}/machineTypes/#{config[:machine_type]}"
       end
 
-      def instance_metadata
-        metadata = {
-          "created-by"            => "test-kitchen",
-          "test-kitchen-instance" => instance.name,
-          "test-kitchen-user"     => env_user,
-        }
+      def metadata
+        config[:metadata].merge({
+                                    "created-by"            => "test-kitchen",
+                                    "test-kitchen-instance" => instance.name,
+                                    "test-kitchen-user"     => env_user,
+                                })
+      end
 
+      def instance_metadata
         Google::Apis::ComputeV1::Metadata.new.tap do |metadata_obj|
           metadata_obj.items = metadata.each_with_object([]) do |(k, v), memo|
             memo << Google::Apis::ComputeV1::Metadata::Item.new.tap do |item|

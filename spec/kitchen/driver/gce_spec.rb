@@ -806,11 +806,12 @@ describe Kitchen::Driver::Gce do
   end
 
   describe '#instance_metadata' do
+    let(:item1   ) { double("item1") }
+    let(:item2   ) { double("item2") }
+    let(:item3   ) { double("item3") }
+    let(:metadata) { double("metadata") }
+
     it "returns a properly-configured metadata object" do
-      item1    = double("item1")
-      item2    = double("item2")
-      item3    = double("item3")
-      metadata = double("metadata")
 
       expect(instance).to receive(:name).and_return("instance_name")
       expect(driver).to receive(:env_user).and_return("env_user")
@@ -825,6 +826,32 @@ describe Kitchen::Driver::Gce do
       expect(item3).to receive(:key=).with("test-kitchen-user")
       expect(item3).to receive(:value=).with("env_user")
       expect(metadata).to receive(:items=).with([item1, item2, item3])
+
+      expect(driver.instance_metadata).to eq(metadata)
+    end
+
+    it "accepts custom metadata" do
+      foo = double("foo")
+      config[:metadata] = { 'foo' => 'bar' }
+
+      expect(instance).to receive(:name).and_return("instance_name")
+      expect(driver).to receive(:env_user).and_return("env_user")
+
+      expect(Google::Apis::ComputeV1::Metadata).to receive(:new).and_return(metadata)
+      expect(Google::Apis::ComputeV1::Metadata::Item).to receive(:new).and_return(foo)
+      expect(Google::Apis::ComputeV1::Metadata::Item).to receive(:new).and_return(item1)
+      expect(Google::Apis::ComputeV1::Metadata::Item).to receive(:new).and_return(item2)
+      expect(Google::Apis::ComputeV1::Metadata::Item).to receive(:new).and_return(item3)
+      expect(item1).to receive(:key=).with("created-by")
+      expect(item1).to receive(:value=).with("test-kitchen")
+      expect(item2).to receive(:key=).with("test-kitchen-instance")
+      expect(item2).to receive(:value=).with("instance_name")
+      expect(item3).to receive(:key=).with("test-kitchen-user")
+      expect(item3).to receive(:value=).with("env_user")
+      expect(foo).to receive(:key=).with("foo")
+      expect(foo).to receive(:value=).with("bar")
+
+      expect(metadata).to receive(:items=).with([foo, item1, item2, item3])
 
       expect(driver.instance_metadata).to eq(metadata)
     end
