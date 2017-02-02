@@ -53,32 +53,10 @@ module Kitchen
         "userinfo-email"     => "userinfo.email",
       }
 
-      IMAGE_ALIAS_MAP = {
-        "centos-6"           => { project: "centos-cloud",      prefix: "centos-6" },
-        "centos-7"           => { project: "centos-cloud",      prefix: "centos-7" },
-        "container-vm"       => { project: "google-containers", prefix: "container-vm" },
-        "coreos"             => { project: "coreos-cloud",      prefix: "coreos-stable" },
-        "debian-7"           => { project: "debian-cloud",      prefix: "debian-7-wheezy" },
-        "debian-7-backports" => { project: "debian-cloud",      prefix: "backports-debian-7-wheezy" },
-        "debian-8"           => { project: "debian-cloud",      prefix: "debian-8-jessie" },
-        "opensuse-13"        => { project: "opensuse-cloud",    prefix: "opensuse-13" },
-        "rhel-6"             => { project: "rhel-cloud",        prefix: "rhel-6" },
-        "rhel-7"             => { project: "rhel-cloud",        prefix: "rhel-7" },
-        "sles-11"            => { project: "suse-cloud",        prefix: "sles-11" },
-        "sles-12"            => { project: "suse-cloud",        prefix: "sles-12" },
-        "ubuntu-12-04"       => { project: "ubuntu-os-cloud",   prefix: "ubuntu-1204-precise" },
-        "ubuntu-14-04"       => { project: "ubuntu-os-cloud",   prefix: "ubuntu-1404-trusty" },
-        "ubuntu-15-04"       => { project: "ubuntu-os-cloud",   prefix: "ubuntu-1504-vivid" },
-        "ubuntu-15-10"       => { project: "ubuntu-os-cloud",   prefix: "ubuntu-1510-wily" },
-        "windows-2008-r2"    => { project: "windows-cloud",     prefix: "windows-server-2008-r2" },
-        "windows-2012-r2"    => { project: "windows-cloud",     prefix: "windows-server-2012-r2" },
-      }
-
       kitchen_driver_api_version 2
       plugin_version Kitchen::Driver::GCE_VERSION
 
       required_config :project
-      required_config :image_name
 
       default_config :region, nil
       default_config :zone, nil
@@ -96,6 +74,8 @@ module Kitchen
       default_config :preemptible, false
       default_config :auto_restart, false
       default_config :auto_migrate, false
+      default_config :image_family, nil
+      default_config :image_name, nil
       default_config :image_project, nil
       default_config :email, nil
       default_config :use_private_ip, false
@@ -166,12 +146,15 @@ module Kitchen
         raise "Region #{config[:region]} is not a valid region" if config[:region] && !valid_region?
         raise "Machine type #{config[:machine_type]} is not valid" unless valid_machine_type?
         raise "Disk type #{config[:disk_type]} is not valid" unless valid_disk_type?
+        raise "Either image family or name must be specified" unless config[:image_family] || config[:image_name]
         raise "Disk image #{config[:image_name]} is not valid - check your image name and image project" if boot_disk_source_image.nil?
         raise "Network #{config[:network]} is not valid" unless valid_network?
         raise "Subnet #{config[:subnet]} is not valid" if config[:subnet] && !valid_subnet?
         raise "Email address of GCE user is not set" if winrm_transport? && config[:email].nil?
 
         warn("Both zone and region specified - region will be ignored.") if config[:zone] && config[:region]
+        warn("Both image family and name specified - image family will be ignored") if config[:image_family] && config[:image_name]
+        warn("Image project not specified - searching current project only") unless config[:image_project]
         warn("Auto-migrate disabled for preemptible instance") if preemptible? && config[:auto_migrate]
         warn("Auto-restart disabled for preemptible instance") if preemptible? && config[:auto_restart]
       end
@@ -263,7 +246,7 @@ module Kitchen
         check_api_call { connection.get_disk_type(project, zone, config[:disk_type]) }
       end
 
-      def image_exist?(image_project, image_name)
+      def image_exist?
         check_api_call { connection.get_image(image_project, image_name) }
       end
 
@@ -273,6 +256,14 @@ module Kitchen
 
       def project
         config[:project]
+      end
+
+      def image_name
+        @image_name ||= config[:image_name] || image_name_for_family(config[:image_family])
+      end
+
+      def image_project
+        config[:image_project].nil? ? project : config[:image_project]
       end
 
       def region
@@ -366,84 +357,16 @@ module Kitchen
       end
 
       def boot_disk_source_image
-        @boot_disk_source ||= disk_image_url
+        @boot_disk_source ||= image_url
       end
 
-      def disk_image_url
-        # if the user provided an image_project, assume they want it, no questions asked
-        unless config[:image_project].nil?
-          debug("Searching project #{config[:image_project]} for image #{config[:image_name]}")
-          return image_url_for(config[:image_project], config[:image_name])
-        end
-
-        # No image project has been provided. Check to see if the image is a known alias.
-        alias_url = image_alias_url
-        unless alias_url.nil?
-          debug("Image #{config[:image_name]} is a known alias - using image URL: #{alias_url}")
-          return alias_url
-        end
-
-        # Doesn't match an alias. Let's check the user's project for the image.
-        url = image_url_for(project, config[:image_name])
-        unless url.nil?
-          debug("Located image #{config[:image_name]} in project #{project} - using image URL: #{url}")
-          return url
-        end
-
-        # Image not found in user's project. Is there a public project this image might exist in?
-        public_project = public_project_for_image(config[:image_name])
-        if public_project
-          debug("Searching public image project #{public_project} for image #{config[:image_name]}")
-          return image_url_for(public_project, config[:image_name])
-        end
-
-        # No image in user's project or public project, so it doesn't exist.
-        error("Image search failed for image #{config[:image_name]} - no suitable image found")
-        nil
+      def image_url
+        return "projects/#{image_project}/global/images/#{image_name}" if image_exist?
       end
 
-      def image_url_for(image_project, image_name)
-        return "projects/#{image_project}/global/images/#{image_name}" if image_exist?(image_project, image_name)
-      end
-
-      def image_alias_url
-        image_alias = config[:image_name]
-        return unless IMAGE_ALIAS_MAP.key?(image_alias)
-
-        image_project = IMAGE_ALIAS_MAP[image_alias][:project]
-        image_prefix  = IMAGE_ALIAS_MAP[image_alias][:prefix]
-
-        latest_image = connection.list_images(image_project).items
-          .select { |image| image.name.start_with?(image_prefix) }
-          .sort { |a, b| a.name <=> b.name }
-          .last
-
-        return if latest_image.nil?
-
-        latest_image.self_link
-      end
-
-      def public_project_for_image(image)
-        case image
-        when /centos/
-          "centos-cloud"
-        when /container-vm/
-          "google-containers"
-        when /coreos/
-          "coreos-cloud"
-        when /debian/
-          "debian-cloud"
-        when /opensuse-cloud/
-          "opensuse-cloud"
-        when /rhel/
-          "rhel-cloud"
-        when /sles/
-          "suse-cloud"
-        when /ubuntu/
-          "ubuntu-os-cloud"
-        when /windows/
-          "windows-cloud"
-        end
+      def image_name_for_family(image_family)
+        image = connection.get_image_from_family(image_project, image_family)
+        image.name
       end
 
       def machine_type_url
