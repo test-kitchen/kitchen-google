@@ -182,7 +182,7 @@ module Kitchen
       end
 
       def winrm_transport?
-        instance.transport.name.downcase == "winrm"
+        instance.transport.name.casecmp("winrm") == 0
       end
 
       def update_windows_password(server_name)
