@@ -78,13 +78,13 @@ describe Kitchen::Driver::Gce do
     expect(driver.diagnose_plugin[:api_version]).to eq(2)
   end
 
-  describe '#name' do
+  describe "#name" do
     it "has an overridden name" do
       expect(driver.name).to eq("Google Compute (GCE)")
     end
   end
 
-  describe '#create' do
+  describe "#create" do
     let(:connection) { double("connection") }
     let(:operation)  { double("operation", name: "test_operation") }
     let(:state)      { {} }
@@ -151,7 +151,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#destroy' do
+  describe "#destroy" do
     let(:connection) { double("connection") }
     let(:state)      { { server_name: "server_1", hostname: "test_host", zone: "test_zone" } }
 
@@ -187,7 +187,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#validate!' do
+  describe "#validate!" do
     let(:config) do
       {
         project:      "test_project",
@@ -217,17 +217,33 @@ describe Kitchen::Driver::Gce do
     end
 
     context "when neither zone nor region are specified" do
-      let(:config) { {} }
+      let(:config) { { image_name: "test_image" } }
       it "raises an exception" do
         expect { driver.validate! }.to raise_error(RuntimeError, "Either zone or region must be specified")
       end
     end
 
+    context "when neither image_family nor image_name are specified" do
+      let(:config) { { zone: "test_zone" } }
+      it "raises an exception" do
+        expect { driver.validate! }.to raise_error(RuntimeError, "Either image family or name must be specified")
+      end
+    end
+
     context "when zone and region are both set" do
-      let(:config) { { zone: "test_zone", region: "test_region" } }
+      let(:config) { { zone: "test_zone", region: "test_region", image_project: "test_project", image_name: "test_image" } }
 
       it "warns the user that the region will be ignored" do
         expect(driver).to receive(:warn).with("Both zone and region specified - region will be ignored.")
+        driver.validate!
+      end
+    end
+
+    context "when image family and name are both set" do
+      let(:config) { { image_project: "test_project", image_name: "test_image", image_family: "test_image_family", zone: "test_zone" } }
+
+      it "warns the user that the image family will be ignored" do
+        expect(driver).to receive(:warn).with("Both image family and name specified - image family will be ignored")
         driver.validate!
       end
     end
@@ -262,6 +278,7 @@ describe Kitchen::Driver::Gce do
         {
           project:      "test_project",
           zone:         "test_zone",
+          image_name:   "test_image",
           machine_type: "test_machine_type",
           disk_type:    "test_disk_type",
           network:      "test_network",
@@ -306,7 +323,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#connection' do
+  describe "#connection" do
     it "returns a properly configured ComputeService" do
       compute_service = double("compute_service")
       client_options  = double("client_options")
@@ -324,7 +341,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#authorization' do
+  describe "#authorization" do
     it "returns a Google::Auth authorization object" do
       auth_object = double("auth_object")
       expect(Google::Auth).to receive(:get_application_default).and_return(auth_object)
@@ -332,7 +349,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#winrm_transport?' do
+  describe "#winrm_transport?" do
     it "returns true if the transport name is Winrm" do
       expect(transport).to receive(:name).and_return("Winrm")
       expect(driver.winrm_transport?).to eq(true)
@@ -344,7 +361,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#update_windows_password' do
+  describe "#update_windows_password" do
     it "does not attempt to reset the password if the transport is not WinRM" do
       expect(driver).to receive(:winrm_transport?).and_return(false)
       expect(GoogleComputeWindowsPassword).not_to receive(:new)
@@ -374,14 +391,14 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#check_api_call' do
+  describe "#check_api_call" do
     it "returns false and logs a debug message if the block raises a ClientError" do
       expect(driver).to receive(:debug).with("API error: whoops")
       expect(driver.check_api_call { raise Google::Apis::ClientError.new("whoops") }).to eq(false)
     end
 
     it "raises an exception if the block raises something other than a ClientError" do
-      expect { driver.check_api_call { raise RuntimeError.new("whoops") } }.to raise_error(RuntimeError)
+      expect { driver.check_api_call { raise "whoops" } }.to raise_error(RuntimeError)
     end
 
     it "returns true if the block does not raise an exception" do
@@ -389,47 +406,47 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#valid_machine_type?' do
+  describe "#valid_machine_type?" do
     subject { driver.valid_machine_type? }
     it_behaves_like "a validity checker", :machine_type, :get_machine_type, "test_project", "test_zone"
   end
 
-  describe '#valid_network?' do
+  describe "#valid_network?" do
     subject { driver.valid_network? }
     it_behaves_like "a validity checker", :network, :get_network, "test_project"
   end
 
-  describe '#valid_subnet?' do
+  describe "#valid_subnet?" do
     subject { driver.valid_subnet? }
     it_behaves_like "a validity checker", :subnet, :get_subnetwork, "test_project", "test_region"
   end
 
-  describe '#valid_zone?' do
+  describe "#valid_zone?" do
     subject { driver.valid_zone? }
     it_behaves_like "a validity checker", :zone, :get_zone, "test_project"
   end
 
-  describe '#valid_region?' do
+  describe "#valid_region?" do
     subject { driver.valid_region? }
     it_behaves_like "a validity checker", :region, :get_region, "test_project"
   end
 
-  describe '#valid_disk_type?' do
+  describe "#valid_disk_type?" do
     subject { driver.valid_disk_type? }
     it_behaves_like "a validity checker", :disk_type, :get_disk_type, "test_project", "test_zone"
   end
 
-  describe '#image_exist?' do
+  describe "#image_exist?" do
     it "checks the outcome of the API call" do
       connection = double("connection")
       expect(driver).to receive(:connection).and_return(connection)
-      expect(connection).to receive(:get_image).with("image_project", "image_name")
+      expect(connection).to receive(:get_image).with("test_project", "test_image")
       expect(driver).to receive(:check_api_call).and_call_original
-      expect(driver.image_exist?("image_project", "image_name")).to eq(true)
+      expect(driver.image_exist?).to eq(true)
     end
   end
 
-  describe '#server_exist?' do
+  describe "#server_exist?" do
     it "checks the outcome of the API call" do
       expect(driver).to receive(:server_instance).with("server_1")
       expect(driver).to receive(:check_api_call).and_call_original
@@ -437,7 +454,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#project' do
+  describe "#project" do
     it "returns the project from the config" do
       allow(driver).to receive(:project).and_call_original
       expect(driver).to receive(:config).and_return(project: "my_project")
@@ -445,7 +462,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#region' do
+  describe "#region" do
     it "returns the region from the config if specified" do
       allow(driver).to receive(:region).and_call_original
       allow(driver).to receive(:config).and_return(region: "my_region")
@@ -460,7 +477,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#region_for_zone' do
+  describe "#region_for_zone" do
     it "returns the region for a given zone" do
       connection = double("connection")
       zone_obj   = double("zone_obj", region: "/path/to/test_region")
@@ -471,7 +488,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#zone' do
+  describe "#zone" do
     before do
       allow(driver).to receive(:zone).and_call_original
     end
@@ -505,7 +522,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#find_zone' do
+  describe "#find_zone" do
     let(:zones_in_region) { double("zones_in_region") }
 
     before do
@@ -525,7 +542,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#zones_in_region' do
+  describe "#zones_in_region" do
     it "returns a correct list of available zones" do
       zone1      = double("zone1", status: "UP", region: "a/b/c/test_region")
       zone2      = double("zone2", status: "UP", region: "a/b/c/test_region")
@@ -542,7 +559,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#server_instance' do
+  describe "#server_instance" do
     it "returns the instance from the API" do
       connection = double("connection")
       expect(driver).to receive(:connection).and_return(connection)
@@ -551,7 +568,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#ip_address_for' do
+  describe "#ip_address_for" do
     it "returns the private IP if use_private_ip is true" do
       expect(driver).to receive(:config).and_return(use_private_ip: true)
       expect(driver).to receive(:private_ip_for).with("server").and_return("1.2.3.4")
@@ -565,7 +582,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#private_ip_for' do
+  describe "#private_ip_for" do
     it "returns the IP address if it exists" do
       network_interface = double("network_interface", network_ip: "1.2.3.4")
       server            = double("server", network_interfaces: [network_interface])
@@ -581,7 +598,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#public_ip_for' do
+  describe "#public_ip_for" do
     it "returns the IP address if it exists" do
       access_config     = double("access_config", nat_ip: "4.3.2.1")
       network_interface = double("network_interface", access_configs: [access_config])
@@ -599,7 +616,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#generate_server_name' do
+  describe "#generate_server_name" do
     it "generates and returns a server name" do
       expect(instance).to receive(:name).and_return("ABC123")
       expect(SecureRandom).to receive(:hex).with(3).and_return("abcdef")
@@ -615,7 +632,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#boot_disk' do
+  describe "#boot_disk" do
     it "sets up a disk object and returns it" do
       disk    = double("disk")
       params  = double("params")
@@ -628,7 +645,7 @@ describe Kitchen::Driver::Gce do
 
       allow(driver).to receive(:config).and_return(config)
       expect(driver).to receive(:disk_type_url_for).with("test_type").and_return("disk_url")
-      expect(driver).to receive(:disk_image_url).and_return("disk_image_url")
+      expect(driver).to receive(:image_url).and_return("disk_image_url")
 
       expect(Google::Apis::ComputeV1::AttachedDisk).to receive(:new).and_return(disk)
       expect(Google::Apis::ComputeV1::AttachedDiskInitializeParams).to receive(:new).and_return(params)
@@ -644,168 +661,55 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#disk_type_url_for' do
+  describe "#disk_type_url_for" do
     it "returns a disk URL" do
       expect(driver.disk_type_url_for("my_type")).to eq("zones/test_zone/diskTypes/my_type")
     end
   end
 
-  describe '#disk_image_url' do
+  describe "#image_name" do
     before do
       allow(driver).to receive(:config).and_return(config)
     end
 
-    context "when the user supplies an image project" do
+    context "when the user supplies an image name" do
       let(:config) { { image_project: "my_image_project", image_name: "my_image" } }
 
-      it "returns the image URL based on the image project" do
-        expect(driver).to receive(:image_url_for).with("my_image_project", "my_image").and_return("image_url")
-        expect(driver.disk_image_url).to eq("image_url")
+      it "returns the image name supplied" do
+        expect(driver.image_name).to eq("my_image")
       end
     end
 
-    context "when the user does not supply an image project" do
+    context "when the user supplies an image family" do
+      let(:config) { { image_project: "my_image_project", image_family: "my_image_family" } }
 
-      context "when the image provided is an alias" do
-        let(:config) { { image_name: "image_alias" } }
-
-        it "returns the alias URL" do
-          expect(driver).to receive(:image_alias_url).and_return("image_alias_url")
-          expect(driver.disk_image_url).to eq("image_alias_url")
-        end
-      end
-
-      context "when the image provided is not an alias" do
-        let(:config) { { image_name: "my_image" } }
-
-        before do
-          expect(driver).to receive(:image_alias_url).and_return(nil)
-        end
-
-        context "when the image exists in the user's project" do
-          it "returns the image URL" do
-            expect(driver).to receive(:image_url_for).with(project, "my_image").and_return("image_url")
-            expect(driver.disk_image_url).to eq("image_url")
-          end
-        end
-
-        context "when the image does not exist in the user's project" do
-          before do
-            expect(driver).to receive(:image_url_for).with(project, "my_image").and_return(nil)
-          end
-
-          context "when the image matches a known public project" do
-            it "returns the image URL from the public project" do
-              expect(driver).to receive(:public_project_for_image).with("my_image").and_return("public_project")
-              expect(driver).to receive(:image_url_for).with("public_project", "my_image").and_return("image_url")
-              expect(driver.disk_image_url).to eq("image_url")
-            end
-          end
-
-          context "when the image does not match a known project" do
-            it "returns nil" do
-              expect(driver).to receive(:public_project_for_image).with("my_image").and_return(nil)
-              expect(driver).not_to receive(:image_url_for)
-              expect(driver.disk_image_url).to eq(nil)
-            end
-          end
-        end
+      it "returns the image found in the family" do
+        expect(driver).to receive(:image_name_for_family).with("my_image_family").and_return("my_image")
+        expect(driver.image_name).to eq("my_image")
       end
     end
   end
 
-  describe '#image_url_for' do
+  describe "#image_url" do
     it "returns nil if the image does not exist" do
-      expect(driver).to receive(:image_exist?).with("image_project", "image_name").and_return(false)
-      expect(driver.image_url_for("image_project", "image_name")).to eq(nil)
+      expect(driver).to receive(:image_exist?).and_return(false)
+      expect(driver.image_url).to eq(nil)
     end
 
     it "returns a properly formatted image URL if the image exists" do
-      expect(driver).to receive(:image_exist?).with("image_project", "image_name").and_return(true)
-      expect(driver.image_url_for("image_project", "image_name")).to eq("projects/image_project/global/images/image_name")
+      expect(driver).to receive(:image_exist?).and_return(true)
+      expect(driver.image_url).to eq("projects/test_project/global/images/test_image")
     end
   end
 
-  describe '#image_alias_url' do
-    before do
-      allow(driver).to receive(:config).and_return(config)
-    end
-
-    context "when the image_alias is not a valid alias" do
-      let(:config) { { image_name: "fake_alias" } }
-
-      it "returns nil" do
-        expect(driver.image_alias_url).to eq(nil)
-      end
-    end
-
-    context "when the image_alias is a valid alias" do
-      let(:config)     { { image_name: "centos-7" } }
-      let(:connection) { double("connection") }
-
-      before do
-        allow(driver).to receive(:connection).and_return(connection)
-        allow(connection).to receive(:list_images).and_return(response)
-      end
-
-      context "when the response contains no images" do
-        let(:response) { double("response", items: []) }
-
-        it "returns nil" do
-          expect(driver.image_alias_url).to eq(nil)
-        end
-      end
-
-      context "when the response contains images but none match the name" do
-        let(:image1)   { double("image1", name: "centos-6-v20150101") }
-        let(:image2)   { double("image2", name: "centos-6-v20150202") }
-        let(:image3)   { double("image3", name: "ubuntu-14-v20150303") }
-        let(:response) { double("response", items: [ image1, image2, image3 ]) }
-
-        it "returns nil" do
-          expect(driver.image_alias_url).to eq(nil)
-        end
-      end
-
-      context "when the response contains images that match the name" do
-        let(:image1)   { double("image1", name: "centos-7-v20160201", self_link: "image1_selflink") }
-        let(:image2)   { double("image2", name: "centos-7-v20160301", self_link: "image2_selflink") }
-        let(:image3)   { double("image3", name: "centos-6-v20160401", self_link: "image3_selflink") }
-        let(:response) { double("response", items: [ image1, image2, image3 ]) }
-
-        it "returns the link for image2 which is the most recent image" do
-          expect(driver.image_alias_url).to eq("image2_selflink")
-        end
-      end
-    end
-  end
-
-  describe '#public_project_for_image' do
-    {
-      "centos"         => "centos-cloud",
-      "container-vm"   => "google-containers",
-      "coreos"         => "coreos-cloud",
-      "debian"         => "debian-cloud",
-      "opensuse-cloud" => "opensuse-cloud",
-      "rhel"           => "rhel-cloud",
-      "sles"           => "suse-cloud",
-      "ubuntu"         => "ubuntu-os-cloud",
-      "windows"        => "windows-cloud",
-    }.each do |image_name, project_name|
-      it "returns project #{project_name} for an image named #{image_name}" do
-        expect(driver.public_project_for_image(image_name)).to eq(project_name)
-      end
-    end
-  end
-
-  describe '#machine_type_url' do
+  describe "#machine_type_url" do
     it "returns a machine type URL" do
       expect(driver).to receive(:config).and_return(machine_type: "machine_type")
       expect(driver.machine_type_url).to eq("zones/test_zone/machineTypes/machine_type")
     end
   end
 
-  describe '#instance_metadata' do
+  describe "#instance_metadata" do
     it "returns a properly-configured metadata object" do
       item1    = double("item1")
       item2    = double("item2")
@@ -830,7 +734,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#env_user' do
+  describe "#env_user" do
     it "returns the current user from the environment" do
       expect(ENV).to receive(:[]).with("USER").and_return("test_user")
       expect(driver.env_user).to eq("test_user")
@@ -842,7 +746,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#instance_network_interfaces' do
+  describe "#instance_network_interfaces" do
     let(:interface) { double("interface") }
 
     before do
@@ -885,14 +789,14 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#network_url' do
+  describe "#network_url" do
     it "returns a network URL" do
       expect(driver).to receive(:config).and_return(network: "test_network")
       expect(driver.network_url).to eq("projects/test_project/global/networks/test_network")
     end
   end
 
-  describe '#subnet_url_for' do
+  describe "#subnet_url_for" do
     it "returns nil if no subnet is specified" do
       expect(driver).to receive(:config).and_return({})
       expect(driver.subnet_url).to eq(nil)
@@ -905,7 +809,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#interface_access_configs' do
+  describe "#interface_access_configs" do
     it "returns a properly-configured access config object" do
       access_config = double("access_config")
 
@@ -923,7 +827,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#instance_scheduling' do
+  describe "#instance_scheduling" do
     it "returns a properly-configured scheduling object" do
       scheduling = double("scheduling")
 
@@ -938,14 +842,14 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#preemptible?' do
+  describe "#preemptible?" do
     it "returns the preemptible setting from the config" do
       expect(driver).to receive(:config).and_return(preemptible: "test_preempt")
       expect(driver.preemptible?).to eq("test_preempt")
     end
   end
 
-  describe '#auto_migrate?' do
+  describe "#auto_migrate?" do
     it "returns false if the instance is preemptible" do
       expect(driver).to receive(:preemptible?).and_return(true)
       expect(driver.auto_migrate?).to eq(false)
@@ -958,7 +862,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#auto_restart?' do
+  describe "#auto_restart?" do
     it "returns false if the instance is preemptible" do
       expect(driver).to receive(:preemptible?).and_return(true)
       expect(driver.auto_restart?).to eq(false)
@@ -971,7 +875,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#migrate_setting' do
+  describe "#migrate_setting" do
     it "returns MIGRATE if auto_migrate is true" do
       expect(driver).to receive(:auto_migrate?).and_return(true)
       expect(driver.migrate_setting).to eq("MIGRATE")
@@ -983,7 +887,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#instance_service_accounts' do
+  describe "#instance_service_accounts" do
     it "returns nil if service_account_scopes is nil" do
       allow(driver).to receive(:config).and_return({})
       expect(driver.instance_service_accounts).to eq(nil)
@@ -1011,7 +915,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#service_account_scope_url' do
+  describe "#service_account_scope_url" do
     it "returns the passed-in scope if it already looks like a scope URL" do
       scope = "https://www.googleapis.com/auth/fake_scope"
       expect(driver.service_account_scope_url(scope)).to eq(scope)
@@ -1023,7 +927,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#translate_scope_alias' do
+  describe "#translate_scope_alias" do
     it "returns a scope for a given alias" do
       expect(driver.translate_scope_alias("storage-rw")).to eq("devstorage.read_write")
     end
@@ -1033,7 +937,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#instance_tags' do
+  describe "#instance_tags" do
     it "returns a properly-formatted tags object" do
       tags_obj = double("tags_obj")
 
@@ -1045,21 +949,21 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#wait_time' do
+  describe "#wait_time" do
     it "returns the configured wait time" do
       expect(driver).to receive(:config).and_return(wait_time: 123)
       expect(driver.wait_time).to eq(123)
     end
   end
 
-  describe '#refresh_rate' do
+  describe "#refresh_rate" do
     it "returns the configured refresh rate" do
       expect(driver).to receive(:config).and_return(refresh_rate: 321)
       expect(driver.refresh_rate).to eq(321)
     end
   end
 
-  describe '#wait_for_status' do
+  describe "#wait_for_status" do
     let(:item) { double("item") }
 
     before do
@@ -1103,7 +1007,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#wait_for_operation' do
+  describe "#wait_for_operation" do
     let(:operation) { double("operation", name: "operation-123") }
 
     it "raises a properly-formatted exception when errors exist" do
@@ -1126,7 +1030,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#zone_operation' do
+  describe "#zone_operation" do
     it "fetches the operation from the API and returns it" do
       connection = double("connection")
       expect(driver).to receive(:connection).and_return(connection)
@@ -1135,7 +1039,7 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe '#operation_errors' do
+  describe "#operation_errors" do
     let(:operation) { double("operation") }
     let(:error_obj) { double("error_obj") }
 

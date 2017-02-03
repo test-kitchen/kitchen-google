@@ -24,7 +24,7 @@ which to run your test-kitchen instances, create one, noting the
 
 ### Authentication and Authorization
 
-The [underlying API](https://github.com/google/google-api-ruby-client) this plugin uses relies on the 
+The [underlying API](https://github.com/google/google-api-ruby-client) this plugin uses relies on the
 [Google Auth Library](https://github.com/google/google-auth-library-ruby) to handle authentication to the
 Google Cloud API. The auth library expects that there is a JSON credentials file located at:
 
@@ -39,7 +39,7 @@ If you already have a file you'd like to use that is in a different location, se
 ### SSH Keys
 
 In order to bootstrap Linux nodes, you will first need to ensure your SSH
-keys are set up correctly. Ensure your SSH public key is properly entered 
+keys are set up correctly. Ensure your SSH public key is properly entered
 into your project's Metadata tab in the GCP Console. GCE will add your key
 to the appropriate user's `~/.ssh/authorized_keys` file when Chef first
 connects to perform the bootstrap process.
@@ -113,26 +113,38 @@ Note that this parameter requires the "Project ID", not the "Project Name."
 
 Example: "funky-penguin-12345"
 
+### `image_project`
+
+The project ID of the GCP project to search for the configured image or image
+family. This must be specified to find either public images or your own images
+that exist in another project.
+
+Example: "ubuntu-os-cloud"
+
+### `image_family`
+
+The family of the image to initialize your boot disk from, the latest
+non-deprecated image will be used.
+
+Note that this parameter will be ignored if `image_name` is also specified.
+
+Example: "ubuntu-1604-lts"
+
 ### `image_name`
 
-**Required**. The name of the disk image to use as the source image for 
-the boot disk. Example: `centos-6-v20160219`
+The name of the disk image to use as the source image for the boot disk.
 
-The GCP project specified with the `project` configuration parameter will
-be searched first. If the image cannot be found and it looks like a common
-public image, the appropriate public project will be searched.
+Example: `centos-7-v20170124`
 
-You can override the project in which to search for the image with the
-`image_project` parameter.
+This parameter will override `image_family` if they are both specified.
 
-Additionally, you can supply an image alias supported by the `gcloud compute instances create`
-command and kitchen-google will find the latest version of that image to use.
-For a full list of aliases, see the output of `gcloud compute instances create --help`.
+If `image_project` is not specified, only the GCP project specified in `project`
+will be searched.
 
 ### `zone`
 
 **Required if `region` is left blank.** The name of the GCE zone in which to
-launch your instances. 
+launch your instances.
 
 Example: `us-east1-b`
 
@@ -166,7 +178,7 @@ to a host in the event of host maintenance. Default: `false`
 Size, in gigabytes, of boot disk.  Default: `10`.
 
 Some images, such as windows images, have a larger source image size
-and require the disk_size to be the same size or larger than the source. 
+and require the disk_size to be the same size or larger than the source.
 An error message will be displayed to you indicating this requirement
 if necessary.
 
@@ -194,8 +206,8 @@ GCE subnetwork that instance will be attached to. Only applies to custom network
 ### `preemptible`
 
 If set to `true`, GCE instance will be brought up as a  [preemptible](https://cloud.google.com/compute/docs/instances/preemptible) virtual machine,
-that runs at a much lower price than normal instances. However, Compute 
-Engine might terminate (preempt) these instances if it requires access 
+that runs at a much lower price than normal instances. However, Compute
+Engine might terminate (preempt) these instances if it requires access
 to those resources for other tasks; default: `false`
 
 ### `service_account_name`
@@ -285,12 +297,18 @@ transport:
   username: chefuser
 
 platforms:
-  - name: centos
+  - name: centos-7
     driver:
-      image_name: centos-6-v20160219
+      image_project: centos-cloud
+      image_name: centos-7-v20170124
+  - name: ubuntu-16.04
+    driver:
+      image_project: ubuntu-os-cloud
+      image_family: ubuntu-1604-lts
   - name: windows
     driver:
-      image_name: windows-server-2012-r2-dc-v20160112
+      image_project: windows-cloud
+      image_name: windows-server-2012-r2-dc-v20170117
       disk_size: 50
 
 suites:
