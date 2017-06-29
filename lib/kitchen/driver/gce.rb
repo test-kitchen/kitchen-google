@@ -157,7 +157,7 @@ module Kitchen
         warn("Both zone and region specified - region will be ignored.") if config[:zone] && config[:region]
         warn("Both image family and name specified - image family will be ignored") if config[:image_family] && config[:image_name]
         warn("Image project not specified - searching current project only") unless config[:image_project]
-        #warn("Subnet project not specified - searching current project only") unless config[:subnet_project]
+        warn("Subnet project not specified - searching current project only") if config[:subnet] && !config[:subnet_project]
         warn("Auto-migrate disabled for preemptible instance") if preemptible? && config[:auto_migrate]
         warn("Auto-restart disabled for preemptible instance") if preemptible? && config[:auto_restart]
       end
