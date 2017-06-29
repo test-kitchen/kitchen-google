@@ -790,9 +790,18 @@ describe Kitchen::Driver::Gce do
   end
 
   describe "#network_url" do
-    it "returns a network URL" do
-      expect(driver).to receive(:config).and_return(network: "test_network")
-      expect(driver.network_url).to eq("projects/test_project/global/networks/test_network")
+    context "when the user does not provide network_project" do
+      it "returns a network URL" do
+        allow(driver).to receive(:config).and_return(network: "test_network")
+        expect(driver.network_url).to eq("projects/test_project/global/networks/test_network")
+      end
+    end
+
+    context "when the user provides network_project" do
+      it "returns a network URL" do
+        allow(driver).to receive(:config).and_return(network: "test_network", network_project: "test_xpn_project")
+        expect(driver.network_url).to eq("projects/test_xpn_project/global/networks/test_network")
+      end
     end
   end
 
@@ -802,10 +811,20 @@ describe Kitchen::Driver::Gce do
       expect(driver.subnet_url).to eq(nil)
     end
 
-    it "returns a properly-formatted subnet URL" do
-      allow(driver).to receive(:config).and_return(subnet: "test_subnet")
-      expect(driver).to receive(:region).and_return("test_region")
-      expect(driver.subnet_url).to eq("projects/test_project/regions/test_region/subnetworks/test_subnet")
+    context "when the user does not provide subnet_project" do
+      it "returns a properly-formatted subnet URL" do
+        allow(driver).to receive(:config).and_return(subnet: "test_subnet")
+        expect(driver).to receive(:region).and_return("test_region")
+        expect(driver.subnet_url).to eq("projects/test_project/regions/test_region/subnetworks/test_subnet")
+      end
+    end
+
+    context "when the user provides subnet_project" do
+      it "returns a properly-formatted subnet URL" do
+        allow(driver).to receive(:config).and_return(subnet_project: "test_xpn_project", subnet: "test_subnet")
+        expect(driver).to receive(:region).and_return("test_region")
+        expect(driver.subnet_url).to eq("projects/test_xpn_project/regions/test_region/subnetworks/test_subnet")
+      end
     end
   end
 
