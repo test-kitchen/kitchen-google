@@ -530,13 +530,11 @@ module Kitchen
       end
 
       def wait_for_server
-        begin
-          instance.transport.connection(state).wait_until_ready
-        rescue
-          error("Server not reachable. Destroying server...")
-          destroy(state)
-          raise
-        end
+        instance.transport.connection(state).wait_until_ready
+      rescue
+        error("Server not reachable. Destroying server...")
+        destroy(state)
+        raise
       end
 
       def zone_operation(operation_name)
