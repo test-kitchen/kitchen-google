@@ -217,17 +217,33 @@ describe Kitchen::Driver::Gce do
     end
 
     context "when neither zone nor region are specified" do
-      let(:config) { {} }
+      let(:config) { { image_name: "test_image" } }
       it "raises an exception" do
         expect { driver.validate! }.to raise_error(RuntimeError, "Either zone or region must be specified")
       end
     end
 
+    context "when neither image_family nor image_name are specified" do
+      let(:config) { { zone: "test_zone" } }
+      it "raises an exception" do
+        expect { driver.validate! }.to raise_error(RuntimeError, "Either image family or name must be specified")
+      end
+    end
+
     context "when zone and region are both set" do
-      let(:config) { { zone: "test_zone", region: "test_region" } }
+      let(:config) { { zone: "test_zone", region: "test_region", image_project: "test_project", image_name: "test_image" } }
 
       it "warns the user that the region will be ignored" do
         expect(driver).to receive(:warn).with("Both zone and region specified - region will be ignored.")
+        driver.validate!
+      end
+    end
+
+    context "when image family and name are both set" do
+      let(:config) { { image_project: "test_project", image_name: "test_image", image_family: "test_image_family", zone: "test_zone" } }
+
+      it "warns the user that the image family will be ignored" do
+        expect(driver).to receive(:warn).with("Both image family and name specified - image family will be ignored")
         driver.validate!
       end
     end
@@ -262,6 +278,7 @@ describe Kitchen::Driver::Gce do
         {
           project:      "test_project",
           zone:         "test_zone",
+          image_name:   "test_image",
           machine_type: "test_machine_type",
           disk_type:    "test_disk_type",
           network:      "test_network",
@@ -423,9 +440,9 @@ describe Kitchen::Driver::Gce do
     it "checks the outcome of the API call" do
       connection = double("connection")
       expect(driver).to receive(:connection).and_return(connection)
-      expect(connection).to receive(:get_image).with("image_project", "image_name")
+      expect(connection).to receive(:get_image).with("test_project", "test_image")
       expect(driver).to receive(:check_api_call).and_call_original
-      expect(driver.image_exist?("image_project", "image_name")).to eq(true)
+      expect(driver.image_exist?).to eq(true)
     end
   end
 
@@ -628,7 +645,7 @@ describe Kitchen::Driver::Gce do
 
       allow(driver).to receive(:config).and_return(config)
       expect(driver).to receive(:disk_type_url_for).with("test_type").and_return("disk_url")
-      expect(driver).to receive(:disk_image_url).and_return("disk_image_url")
+      expect(driver).to receive(:image_url).and_return("disk_image_url")
 
       expect(Google::Apis::ComputeV1::AttachedDisk).to receive(:new).and_return(disk)
       expect(Google::Apis::ComputeV1::AttachedDiskInitializeParams).to receive(:new).and_return(params)
@@ -650,151 +667,38 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe "#disk_image_url" do
+  describe "#image_name" do
     before do
       allow(driver).to receive(:config).and_return(config)
     end
 
-    context "when the user supplies an image project" do
+    context "when the user supplies an image name" do
       let(:config) { { image_project: "my_image_project", image_name: "my_image" } }
 
-      it "returns the image URL based on the image project" do
-        expect(driver).to receive(:image_url_for).with("my_image_project", "my_image").and_return("image_url")
-        expect(driver.disk_image_url).to eq("image_url")
+      it "returns the image name supplied" do
+        expect(driver.image_name).to eq("my_image")
       end
     end
 
-    context "when the user does not supply an image project" do
+    context "when the user supplies an image family" do
+      let(:config) { { image_project: "my_image_project", image_family: "my_image_family" } }
 
-      context "when the image provided is an alias" do
-        let(:config) { { image_name: "image_alias" } }
-
-        it "returns the alias URL" do
-          expect(driver).to receive(:image_alias_url).and_return("image_alias_url")
-          expect(driver.disk_image_url).to eq("image_alias_url")
-        end
-      end
-
-      context "when the image provided is not an alias" do
-        let(:config) { { image_name: "my_image" } }
-
-        before do
-          expect(driver).to receive(:image_alias_url).and_return(nil)
-        end
-
-        context "when the image exists in the user's project" do
-          it "returns the image URL" do
-            expect(driver).to receive(:image_url_for).with(project, "my_image").and_return("image_url")
-            expect(driver.disk_image_url).to eq("image_url")
-          end
-        end
-
-        context "when the image does not exist in the user's project" do
-          before do
-            expect(driver).to receive(:image_url_for).with(project, "my_image").and_return(nil)
-          end
-
-          context "when the image matches a known public project" do
-            it "returns the image URL from the public project" do
-              expect(driver).to receive(:public_project_for_image).with("my_image").and_return("public_project")
-              expect(driver).to receive(:image_url_for).with("public_project", "my_image").and_return("image_url")
-              expect(driver.disk_image_url).to eq("image_url")
-            end
-          end
-
-          context "when the image does not match a known project" do
-            it "returns nil" do
-              expect(driver).to receive(:public_project_for_image).with("my_image").and_return(nil)
-              expect(driver).not_to receive(:image_url_for)
-              expect(driver.disk_image_url).to eq(nil)
-            end
-          end
-        end
+      it "returns the image found in the family" do
+        expect(driver).to receive(:image_name_for_family).with("my_image_family").and_return("my_image")
+        expect(driver.image_name).to eq("my_image")
       end
     end
   end
 
-  describe "#image_url_for" do
+  describe "#image_url" do
     it "returns nil if the image does not exist" do
-      expect(driver).to receive(:image_exist?).with("image_project", "image_name").and_return(false)
-      expect(driver.image_url_for("image_project", "image_name")).to eq(nil)
+      expect(driver).to receive(:image_exist?).and_return(false)
+      expect(driver.image_url).to eq(nil)
     end
 
     it "returns a properly formatted image URL if the image exists" do
-      expect(driver).to receive(:image_exist?).with("image_project", "image_name").and_return(true)
-      expect(driver.image_url_for("image_project", "image_name")).to eq("projects/image_project/global/images/image_name")
-    end
-  end
-
-  describe "#image_alias_url" do
-    before do
-      allow(driver).to receive(:config).and_return(config)
-    end
-
-    context "when the image_alias is not a valid alias" do
-      let(:config) { { image_name: "fake_alias" } }
-
-      it "returns nil" do
-        expect(driver.image_alias_url).to eq(nil)
-      end
-    end
-
-    context "when the image_alias is a valid alias" do
-      let(:config)     { { image_name: "centos-7" } }
-      let(:connection) { double("connection") }
-
-      before do
-        allow(driver).to receive(:connection).and_return(connection)
-        allow(connection).to receive(:list_images).and_return(response)
-      end
-
-      context "when the response contains no images" do
-        let(:response) { double("response", items: []) }
-
-        it "returns nil" do
-          expect(driver.image_alias_url).to eq(nil)
-        end
-      end
-
-      context "when the response contains images but none match the name" do
-        let(:image1)   { double("image1", name: "centos-6-v20150101") }
-        let(:image2)   { double("image2", name: "centos-6-v20150202") }
-        let(:image3)   { double("image3", name: "ubuntu-14-v20150303") }
-        let(:response) { double("response", items: [ image1, image2, image3 ]) }
-
-        it "returns nil" do
-          expect(driver.image_alias_url).to eq(nil)
-        end
-      end
-
-      context "when the response contains images that match the name" do
-        let(:image1)   { double("image1", name: "centos-7-v20160201", self_link: "image1_selflink") }
-        let(:image2)   { double("image2", name: "centos-7-v20160301", self_link: "image2_selflink") }
-        let(:image3)   { double("image3", name: "centos-6-v20160401", self_link: "image3_selflink") }
-        let(:response) { double("response", items: [ image1, image2, image3 ]) }
-
-        it "returns the link for image2 which is the most recent image" do
-          expect(driver.image_alias_url).to eq("image2_selflink")
-        end
-      end
-    end
-  end
-
-  describe "#public_project_for_image" do
-    {
-      "centos"         => "centos-cloud",
-      "container-vm"   => "google-containers",
-      "coreos"         => "coreos-cloud",
-      "debian"         => "debian-cloud",
-      "opensuse-cloud" => "opensuse-cloud",
-      "rhel"           => "rhel-cloud",
-      "sles"           => "suse-cloud",
-      "ubuntu"         => "ubuntu-os-cloud",
-      "windows"        => "windows-cloud",
-    }.each do |image_name, project_name|
-      it "returns project #{project_name} for an image named #{image_name}" do
-        expect(driver.public_project_for_image(image_name)).to eq(project_name)
-      end
+      expect(driver).to receive(:image_exist?).and_return(true)
+      expect(driver.image_url).to eq("projects/test_project/global/images/test_image")
     end
   end
 
