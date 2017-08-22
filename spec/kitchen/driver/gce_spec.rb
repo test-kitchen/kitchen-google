@@ -329,7 +329,7 @@ describe Kitchen::Driver::Gce do
       client_options  = double("client_options")
 
       expect(Google::Apis::ClientOptions).to receive(:new).and_return(client_options)
-      expect(client_options).to receive(:application_name=).with("kitchen-google")
+      expect(client_options).to receive(:application_name=).with("GoogleChefTestKitchen")
       expect(client_options).to receive(:application_version=).with(Kitchen::Driver::GCE_VERSION)
 
       expect(Google::Apis::ComputeV1::ComputeService).to receive(:new).and_return(compute_service)

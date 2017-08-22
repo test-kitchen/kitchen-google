@@ -165,7 +165,7 @@ module Kitchen
         @connection = Google::Apis::ComputeV1::ComputeService.new
         @connection.authorization = authorization
         @connection.client_options = Google::Apis::ClientOptions.new.tap do |opts|
-          opts.application_name    = "kitchen-google"
+          opts.application_name    = "GoogleChefTestKitchen"
           opts.application_version = Kitchen::Driver::GCE_VERSION
         end
 
