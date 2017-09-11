@@ -157,6 +157,15 @@ Example: `us-central1`
 
 This parameter will be ignored if `zone` is specified.
 
+### `inst_name`
+
+**Optional** Name to give to instance. If given, must be under 63 characters
+in length. Any character that is not alphanumeric or a hyphen will be converted
+to a hyphen. Unlike EC2's "Name" tag, this is used as an instance identifier and
+must be unique.  By default, a unique name will be auto-generated; note that
+auto-generated names must be used if there is more than one test suite.  Default:
+`tk-<suite>-<platform>-<UUID>`
+
 ### `autodelete_disk`
 
 Boolean specifying whether or not to automatically delete boot disk
