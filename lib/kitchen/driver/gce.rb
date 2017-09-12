@@ -386,8 +386,8 @@ module Kitchen
         Google::Apis::ComputeV1::Metadata.new.tap do |metadata_obj|
           metadata_obj.items = metadata.each_with_object([]) do |(k, v), memo|
             memo << Google::Apis::ComputeV1::Metadata::Item.new.tap do |item|
-              item.key   = k
-              item.value = v
+              item.key   = k.to_s
+              item.value = v.to_s
             end
           end
         end
