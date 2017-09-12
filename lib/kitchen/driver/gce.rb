@@ -81,6 +81,8 @@ module Kitchen
       default_config :use_private_ip, false
       default_config :wait_time, 600
       default_config :refresh_rate, 2
+      default_config :ssh_pub_key, nil
+      expand_path_for :ssh_pub_key
 
       def name
         "Google Compute (GCE)"
@@ -380,6 +382,10 @@ module Kitchen
           "test-kitchen-user"     => env_user,
         }
 
+        if ssh_pub_key
+          metadata = metadata.merge("ssh-keys" => "#{env_user}:#{ssh_pub_key}")
+        end
+
         Google::Apis::ComputeV1::Metadata.new.tap do |metadata_obj|
           metadata_obj.items = metadata.each_with_object([]) do |(k, v), memo|
             memo << Google::Apis::ComputeV1::Metadata::Item.new.tap do |item|
@@ -429,6 +435,11 @@ module Kitchen
           scheduling.preemptible         = preemptible?.to_s
           scheduling.on_host_maintenance = migrate_setting
         end
+      end
+
+      def ssh_pub_key
+        return unless config[:ssh_pub_key]
+        "#{IO.binread(config[:ssh_pub_key]).rstrip!}"
       end
 
       def preemptible?

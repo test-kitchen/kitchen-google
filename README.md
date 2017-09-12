@@ -248,6 +248,12 @@ Amount of time, in seconds, to wait for any API interactions. Default: 600
 
 Amount of time, in seconds, to refresh the status of an API interaction. Default: 2
 
+### `ssh_pub_key`
+
+Path to public key which will be passed to instance through metadata.
+Current shell session user is used as ssh user passed to metadata.
+It should match private key `ssh_key` declared in `transport` section. 
+
 ### Transport Settings
 
 Beginning with Test Kitchen 1.4, settings related to the transport (i.e. how to connect
