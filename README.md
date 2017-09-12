@@ -199,9 +199,17 @@ GCE instance type (size) to launch; default: `n1-standard-1`
 
 GCE network that instance will be attached to; default: `default`
 
+### `network_project`
+
+GCE project which network belongs to; default is same as `project`
+
 ### `subnet`
 
 GCE subnetwork that instance will be attached to. Only applies to custom networks.
+
+### `subnet_project`
+
+GCE project which subnet belongs to. Only applies when `subnet` is used; default is same as `project`
 
 ### `preemptible`
 
