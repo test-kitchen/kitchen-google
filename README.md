@@ -38,6 +38,8 @@ If you already have a file you'd like to use that is in a different location, se
 
 ### SSH Keys
 
+#### Project Level Keys
+
 In order to bootstrap Linux nodes, you will first need to ensure your SSH
 keys are set up correctly. Ensure your SSH public key is properly entered
 into your project's Metadata tab in the GCP Console. GCE will add your key
@@ -76,6 +78,28 @@ transport:
 
 You can find [more information on configuring SSH keys](https://cloud.google.com/compute/docs/instances/adding-removing-ssh-keys) in
 the Google Compute Engine documentation.
+
+#### Instance Level Keys
+
+It is possible to [add keys](https://cloud.google.com/compute/docs/storing-retrieving-metadata#default)
+that are not included in the project's metadata to an instance. Do this by
+listing additional keys in custom metadata (see below for more about [setting
+metadata](#metadata)).
+
+For example, given a workspace that has environment variables set for `USER`
+(the username to connect as) and `SSH_KEY` (the path to the private key to use):
+
+```yaml
+driver:
+  name: gce
+  ...
+  metadata:
+    ssh-keys: <%= ENV['USER'] + ':' + IO.binread("#{ENV['SSH_KEY']}.pub").rstrip! %>
+
+transport:
+  username: <%= ENV['USER'] %>
+  ssh_key: <%= ENV['SSH_KEY'] %>
+```
 
 ## Installation
 
