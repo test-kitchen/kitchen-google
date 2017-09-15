@@ -630,6 +630,12 @@ describe Kitchen::Driver::Gce do
       expect(SecureRandom).to receive(:uuid).and_return("lmnop")
       expect(driver.generate_server_name).to eq("tk-lmnop")
     end
+
+    it "returns a specific name for the server if given in the config" do
+      config[:inst_name] = "the_instance_name"
+
+      expect(driver.generate_server_name).to eq("the-instance-name")
+    end
   end
 
   describe "#boot_disk" do

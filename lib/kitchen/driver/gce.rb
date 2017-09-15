@@ -328,7 +328,11 @@ module Kitchen
       end
 
       def generate_server_name
-        name = "tk-#{instance.name.downcase}-#{SecureRandom.hex(3)}"
+        name = if config[:inst_name]
+                 config[:inst_name]
+               else
+                 "tk-#{instance.name.downcase}-#{SecureRandom.hex(3)}"
+               end
 
         if name.length > 63
           warn("The TK instance name (#{instance.name}) has been removed from the GCE instance name due to size limitations. Consider setting shorter platform or suite names.")
