@@ -1,3 +1,15 @@
+## 1.3.0 / 2017-09-15
+
+ * #43: support adding custom metadata to instances
+ * #52: update user agent string, doc update to replace deprecated gcloud switches
+ * #53: Rubocop and Travis updates
+ * #54: option to set a custom instance name
+ * #55: doc update on how to inject ssh keys with custom metadata
+
+## 1.2.0 / 2017-02-02
+
+ * #44: support image_family
+
 ## 1.1.0 / 2016-03-17
 
  * #32: Rubocop and Rake fixes to address Travis test issues
@@ -47,7 +59,7 @@
 
 ### Improvements
 
-* #9: Dependency updates: Remove faraday version constraint; require newer 
+* #9: Dependency updates: Remove faraday version constraint; require newer
   ridley gem.
 
 ## 0.1.0 / 2014-03-29
