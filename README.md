@@ -57,7 +57,7 @@ Alternatively, the Google Cloud SDK (a.k.a. `gcloud`) will create a SSH key
 for you when you create and access your first instance:
 
  1. Create a small test instance:
-    `gcloud compute instances create instance1 --zone us-central1-f --image debian-8 --machine-type g1-small`
+    `gcloud compute instances create instance1 --zone us-central1-f --image-family=debian-8 --image-project=debian-cloud --machine-type g1-small`
  1. Ensure your SSH keys allow access to the new instance
     `gcloud compute ssh instance1 --zone us-central1-f`
  1. Log out and delete the instance
