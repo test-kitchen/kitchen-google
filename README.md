@@ -248,6 +248,18 @@ Amount of time, in seconds, to wait for any API interactions. Default: 600
 
 Amount of time, in seconds, to refresh the status of an API interaction. Default: 2
 
+### `metadata`
+
+Allows custom instance metadata to be set.
+The following metadata is set by default if no metadata configuration is provided:
+Default:
+
+
+    "created-by"            => "test-kitchen",
+    "test-kitchen-instance" => <instance.name>,
+    "test-kitchen-user"     => <env_user>,
+
+
 ### Transport Settings
 
 Beginning with Test Kitchen 1.4, settings related to the transport (i.e. how to connect
@@ -301,15 +313,27 @@ platforms:
     driver:
       image_project: centos-cloud
       image_name: centos-7-v20170124
+      metadata:
+        application: centos
+        release: a
+        version: 7
   - name: ubuntu-16.04
     driver:
       image_project: ubuntu-os-cloud
       image_family: ubuntu-1604-lts
+      metadata:
+        application: ubuntu
+        release: a
+        version: 1604
   - name: windows
     driver:
       image_project: windows-cloud
       image_name: windows-server-2012-r2-dc-v20170117
       disk_size: 50
+      metadata:
+        application: windows
+        release: a
+        version: cloud
 
 suites:
   - name: default
