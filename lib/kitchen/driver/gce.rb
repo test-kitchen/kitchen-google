@@ -66,7 +66,9 @@ module Kitchen
       default_config :disk_type, "pd-standard"
       default_config :machine_type, "n1-standard-1"
       default_config :network, "default"
+      default_config :network_project, nil
       default_config :subnet, nil
+      default_config :subnet_project, nil
       default_config :inst_name, nil
       default_config :service_account_name, "default"
       default_config :service_account_scopes, []
@@ -156,6 +158,7 @@ module Kitchen
         warn("Both zone and region specified - region will be ignored.") if config[:zone] && config[:region]
         warn("Both image family and name specified - image family will be ignored") if config[:image_family] && config[:image_name]
         warn("Image project not specified - searching current project only") unless config[:image_project]
+        warn("Subnet project not specified - searching current project only") if config[:subnet] && !config[:subnet_project]
         warn("Auto-migrate disabled for preemptible instance") if preemptible? && config[:auto_migrate]
         warn("Auto-restart disabled for preemptible instance") if preemptible? && config[:auto_restart]
       end
@@ -224,12 +227,12 @@ module Kitchen
 
       def valid_network?
         return false if config[:network].nil?
-        check_api_call { connection.get_network(project, config[:network]) }
+        check_api_call { connection.get_network(network_project, config[:network]) }
       end
 
       def valid_subnet?
         return false if config[:subnet].nil?
-        check_api_call { connection.get_subnetwork(project, region, config[:subnet]) }
+        check_api_call { connection.get_subnetwork(subnet_project, region, config[:subnet]) }
       end
 
       def valid_zone?
@@ -265,6 +268,14 @@ module Kitchen
 
       def image_project
         config[:image_project].nil? ? project : config[:image_project]
+      end
+
+      def subnet_project
+        config[:subnet_project].nil? ? project : config[:subnet_project]
+      end
+
+      def network_project
+        config[:network_project].nil? ? project : config[:network_project]
       end
 
       def region
@@ -403,7 +414,7 @@ module Kitchen
 
       def instance_network_interfaces
         interface                = Google::Apis::ComputeV1::NetworkInterface.new
-        interface.network        = network_url
+        interface.network        = network_url if config[:subnet_project].nil?
         interface.subnetwork     = subnet_url if subnet_url
         interface.access_configs = interface_access_configs
 
@@ -411,13 +422,12 @@ module Kitchen
       end
 
       def network_url
-        "projects/#{project}/global/networks/#{config[:network]}"
+        "projects/#{network_project}/global/networks/#{config[:network]}"
       end
 
       def subnet_url
         return unless config[:subnet]
-
-        "projects/#{project}/regions/#{region}/subnetworks/#{config[:subnet]}"
+        "projects/#{subnet_project}/regions/#{region}/subnetworks/#{config[:subnet]}"
       end
 
       def interface_access_configs
