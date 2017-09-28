@@ -1,3 +1,7 @@
+## 1.4.0 / 2017-09-28
+
+ * #47: Add support for Google Shared VPC Networks (XPN)
+
 ## 1.3.0 / 2017-09-15
 
  * #43: support adding custom metadata to instances
