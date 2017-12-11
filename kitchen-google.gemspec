@@ -14,8 +14,8 @@ Gem::Specification.new do |s|
   s.homepage    = "https://github.com/test-kitchen/kitchen-google"
   s.license     = "Apache 2.0"
 
-  s.add_dependency "gcewinpass",        "~> 1.0"
-  s.add_dependency "google-api-client", "~> 0.9.0"
+  s.add_dependency "gcewinpass",        "~> 1.1"
+  s.add_dependency "google-api-client", "~> 0.18"
   s.add_dependency "test-kitchen"
 
   s.add_development_dependency "bundler"

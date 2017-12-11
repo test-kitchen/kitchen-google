@@ -84,6 +84,7 @@ module Kitchen
       default_config :wait_time, 600
       default_config :refresh_rate, 2
       default_config :metadata, {}
+      default_config :labels, {}
 
       def name
         "Google Compute (GCE)"
@@ -334,6 +335,7 @@ module Kitchen
         inst_obj.scheduling         = instance_scheduling
         inst_obj.service_accounts   = instance_service_accounts unless instance_service_accounts.nil?
         inst_obj.tags               = instance_tags
+        inst_obj.labels             = instance_labels
 
         inst_obj
       end
@@ -406,6 +408,10 @@ module Kitchen
             end
           end
         end
+      end
+
+      def instance_labels
+        config[:labels]
       end
 
       def env_user

@@ -224,6 +224,10 @@ While the credentials file specified in the Authentication and Authorization
 section is used for all API interactions, the email address is required when
 performing the necessary password reset prior to bootstrapping the instance.
 
+### `labels`
+
+Hash of labels to associate with instance; default: `{}`
+
 ### `machine_type`
 
 GCE instance type (size) to launch; default: `n1-standard-1`
