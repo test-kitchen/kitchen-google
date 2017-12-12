@@ -1,3 +1,7 @@
+## 1.5.0 / 2017-12-11
+
+ * #59: Add support for GCE instance labels
+
 ## 1.4.0 / 2017-09-28
 
  * #47: Add support for Google Shared VPC Networks (XPN)
