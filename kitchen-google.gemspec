@@ -23,6 +23,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake", "~> 10.5"
   s.add_development_dependency "rspec"
   s.add_development_dependency "rubocop"
+  s.add_development_dependency "json"
 
   s.required_ruby_version = ">= 2.0"
 end

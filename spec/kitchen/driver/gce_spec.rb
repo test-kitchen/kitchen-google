@@ -1001,6 +1001,13 @@ describe Kitchen::Driver::Gce do
     end
   end
 
+  describe "#instance_labels" do
+    it "returns a properly-formatted labels" do
+      expect(driver).to receive(:config).and_return(labels: {})
+      expect(driver.instance_labels).to eq({})
+    end
+  end
+
   describe "#wait_time" do
     it "returns the configured wait time" do
       expect(driver).to receive(:config).and_return(wait_time: 123)
