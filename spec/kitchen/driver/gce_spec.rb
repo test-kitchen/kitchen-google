@@ -318,11 +318,11 @@ describe Kitchen::Driver::Gce do
           disks: {
             disk0: {
               autodelete_disk: true,
-            },              
+            },
           },
         }
       end
-      it "raises an exception if parameters from both disk configurations are present" do 
+      it "raises an exception if parameters from both disk configurations are present" do
         expect { driver.validate! }.to raise_error(RuntimeError, "You cannot use autodelete_disk, disk_size or disk_type with the new disks configuration")
       end
     end
@@ -651,7 +651,7 @@ describe Kitchen::Driver::Gce do
   describe "#create_disks_config" do
     it "creates the new disk config from the old one" do
       config = {
-        disk_size: 30
+        disk_size: 30,
       }
 
       allow(driver).to receive(:config).and_return(config)
@@ -667,9 +667,9 @@ describe Kitchen::Driver::Gce do
       config = {
         disks: {
           disk1: {
-            boot: true
-          }
-        }
+            boot: true,
+          },
+        },
       }
 
       allow(driver).to receive(:config).and_return(config)
@@ -698,14 +698,14 @@ describe Kitchen::Driver::Gce do
       config = {
         disks: {
           disk1: {
-            boot: true
-          }
-        }
+            boot: true,
+          },
+        },
       }
 
       connection = double("connection")
       image = double("image")
-      allow(image).to receive(:name).and_return('test_image')
+      allow(image).to receive(:name).and_return("test_image")
       allow(connection).to receive(:get_image_from_family).and_return(image)
       allow(connection).to receive(:get_image).and_return(image)
       allow(driver).to receive(:config).and_return(config)
@@ -720,9 +720,9 @@ describe Kitchen::Driver::Gce do
       config = {
         disks: {
           disk1: {
-            autodelete_disk: false
-          }
-        }
+            autodelete_disk: false,
+          },
+        },
       }
       connection = double("connection")
       item = double("item")
@@ -741,12 +741,12 @@ describe Kitchen::Driver::Gce do
       config = {
         disks: {
           disk1: {
-            autodelete_disk: false
+            autodelete_disk: false,
           },
           disk2: {
-            disk_size: 15
-          }
-        }
+            disk_size: 15,
+          },
+        },
       }
       connection = double("connection")
       item = double("item")

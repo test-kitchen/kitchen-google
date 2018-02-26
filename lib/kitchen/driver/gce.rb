@@ -164,7 +164,7 @@ module Kitchen
         disk_default_config = {
           autodelete_disk: true,
           disk_size: 10,
-          disk_type: "pd-standard"
+          disk_type: "pd-standard",
         }
 
         if old_disk_configuration_present?
@@ -172,7 +172,7 @@ module Kitchen
           # we'll convert it to the new one
           config[:disks] = {}
           config[:disks][server_name] = {
-            boot: true
+            boot: true,
           }
           config[:disks][server_name][:autodelete_disk] = config[:autodelete_disk].nil? ? disk_default_config[:autodelete_disk] : config[:autodelete_disk]
           config[:disks][server_name][:disk_size] = config[:disk_size].nil? ? disk_default_config[:disk_size] : config[:disk_size]
@@ -201,7 +201,7 @@ module Kitchen
           # If no new disk configuration is present,
           # we'll set up the default configuration for the new style
           config[:disks] = {
-            "disk1": disk_default_config.merge({ boot: true })
+            "disk1": disk_default_config.merge({ boot: true }),
           }
         end
       end
@@ -454,17 +454,17 @@ module Kitchen
         disk.name    = unique_disk_name
         disk.size_gb = disk_config[:disk_size]
         disk.type    = disk_type_url_for(disk_config[:disk_type])
-  
-        info("Creating a #{disk_config[:disk_size]} GB disk named #{unique_disk_name}...")  
-        wait_for_operation(connection.insert_disk(project, zone, disk))  
-        info("Waiting for disk to be ready...")  
-        wait_for_status("READY") { connection.get_disk(project, zone, unique_disk_name) }  
+
+        info("Creating a #{disk_config[:disk_size]} GB disk named #{unique_disk_name}...")
+        wait_for_operation(connection.insert_disk(project, zone, disk))
+        info("Waiting for disk to be ready...")
+        wait_for_status("READY") { connection.get_disk(project, zone, unique_disk_name) }
         info("Disk created successfully.")
         attached_disk = Google::Apis::ComputeV1::AttachedDisk.new
         attached_disk.source = disk_self_link(unique_disk_name)
         attached_disk
       end
-  
+
       def delete_disk(unique_disk_name)
         begin
           connection.get_disk(project, zone, unique_disk_name)
@@ -472,12 +472,11 @@ module Kitchen
           info("Unable to locate disk #{unique_disk_name} in project #{project}, zone #{zone}")
           return
         end
-    
+
         info("Waiting for disk #{unique_disk_name} to be deleted...")
         wait_for_operation(connection.delete_disk(project, zone, unique_disk_name))
         info("Disk #{unique_disk_name} deleted successfully.")
       end
-  
 
       def disk_type_url_for(type)
         "zones/#{zone}/diskTypes/#{type}"
