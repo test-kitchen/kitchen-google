@@ -703,7 +703,13 @@ describe Kitchen::Driver::Gce do
         }
       }
 
+      connection = double("connection")
+      image = double("image")
+      allow(image).to receive(:name).and_return('test_image')
+      allow(connection).to receive(:get_image_from_family).and_return(image)
+      allow(connection).to receive(:get_image).and_return(image)
       allow(driver).to receive(:config).and_return(config)
+      allow(driver).to receive(:connection).and_return(connection)
       disk = driver.create_disks("server_1")
       expect(disk.first.initialize_params.disk_name).to eq("server_1-disk1")
       expect(disk.first.is_a?(Google::Apis::ComputeV1::AttachedDisk)).to eq(true)
