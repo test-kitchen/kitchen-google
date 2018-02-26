@@ -82,7 +82,7 @@ module Kitchen
       default_config :refresh_rate, 2
       default_config :metadata, {}
 
-      DISK_NAME_REGEX = "(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)"
+      DISK_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/
 
       def name
         "Google Compute (GCE)"
@@ -184,7 +184,7 @@ module Kitchen
           boot_disk_counter = 0
           config[:disks].each do |disk_name, disk_config|
             # te&/ => te
-            raise "Disk name invalid. Must match #{DISK_NAME_REGEX}." if disk_name.match(DISK_NAME_REGEX).to_s.length < disk_name.length
+            raise "Disk name invalid. Must match #{DISK_NAME_REGEX}." if disk_name.to_s.match(DISK_NAME_REGEX).to_s.length < disk_name.length
             boot_disk_counter += 1 unless disk_config[:boot].nil?
             config[:disks][disk_name.to_sym] = disk_default_config.merge(disk_config)
             raise "Disk type #{config[:disks][disk_name.to_sym][:disk_type]} for disk #{disk_name} is not valid" unless valid_disk_type?(config[:disks][disk_name.to_sym][:disk_type])
