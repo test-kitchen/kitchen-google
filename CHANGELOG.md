@@ -1,3 +1,7 @@
+## 1.5.0 / 2018-02-26
+
+ * Add support for additional disks to be attached to the instance
+
 ## 1.4.0 / 2017-09-28
 
  * #47: Add support for Google Shared VPC Networks (XPN)

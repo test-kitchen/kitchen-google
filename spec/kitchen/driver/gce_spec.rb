@@ -302,14 +302,29 @@ describe Kitchen::Driver::Gce do
       expect { driver.validate! }.to raise_error(RuntimeError, "Machine type test_machine_type is not valid")
     end
 
-    it "raises an exception if the disk_type is invalid" do
-      expect(driver).to receive(:valid_disk_type?).and_return(false)
-      expect { driver.validate! }.to raise_error(RuntimeError, "Disk type test_disk_type is not valid")
-    end
-
     it "raises an exception if the boot disk source image is invalid" do
       expect(driver).to receive(:boot_disk_source_image).and_return(nil)
       expect { driver.validate! }.to raise_error(RuntimeError, "Disk image test_image is not valid - check your image name and image project")
+    end
+
+    context "both disk configurations are active" do
+      let(:config) do
+        {
+          project:         "test_project",
+          zone:            "test_zone",
+          image_name:      "test_image",
+          machine_type:    "test_machine_type",
+          autodelete_disk: true,
+          disks: {
+            disk0: {
+              autodelete_disk: true,
+            },              
+          },
+        }
+      end
+      it "raises an exception if parameters from both disk configurations are present" do 
+        expect { driver.validate! }.to raise_error(RuntimeError, "You cannot use autodelete_disk, disk_size or disk_type with the new disks configuration")
+      end
     end
 
     it "raises an exception if the network is invalid" do
@@ -429,11 +444,6 @@ describe Kitchen::Driver::Gce do
   describe "#valid_region?" do
     subject { driver.valid_region? }
     it_behaves_like "a validity checker", :region, :get_region, "test_project"
-  end
-
-  describe "#valid_disk_type?" do
-    subject { driver.valid_disk_type? }
-    it_behaves_like "a validity checker", :disk_type, :get_disk_type, "test_project", "test_zone"
   end
 
   describe "#image_exist?" do
@@ -638,32 +648,114 @@ describe Kitchen::Driver::Gce do
     end
   end
 
-  describe "#boot_disk" do
-    it "sets up a disk object and returns it" do
-      disk    = double("disk")
-      params  = double("params")
-
-      config  = {
-        autodelete_disk: "auto_delete",
-        disk_size: "test_size",
-        disk_type: "test_type",
+  describe "#create_disks_config" do
+    it "creates the new disk config from the old one" do
+      config = {
+        disk_size: 30
       }
 
       allow(driver).to receive(:config).and_return(config)
-      expect(driver).to receive(:disk_type_url_for).with("test_type").and_return("disk_url")
-      expect(driver).to receive(:image_url).and_return("disk_image_url")
+      allow(driver).to receive(:server_name).and_return("server-1")
+      allow(driver).to receive(:valid_disk_type?).and_return(true)
+      driver.create_disks_config("create")
+      expect(config[:disks]["server-1"][:autodelete_disk]).to eq(true)
+      expect(config[:disks]["server-1"][:disk_type]).to eq("pd-standard")
+      expect(config[:disks]["server-1"][:disk_size]).to eq(30)
+    end
 
-      expect(Google::Apis::ComputeV1::AttachedDisk).to receive(:new).and_return(disk)
-      expect(Google::Apis::ComputeV1::AttachedDiskInitializeParams).to receive(:new).and_return(params)
-      expect(disk).to receive(:boot=).with(true)
-      expect(disk).to receive(:auto_delete=).with("auto_delete")
-      expect(disk).to receive(:initialize_params=).with(params)
-      expect(params).to receive(:disk_name=).with("server_1")
-      expect(params).to receive(:disk_size_gb=).with("test_size")
-      expect(params).to receive(:disk_type=).with("disk_url")
-      expect(params).to receive(:source_image=).with("disk_image_url")
+    it "creates the default disk config, with an incomplete new configuration" do
+      config = {
+        disks: {
+          disk1: {
+            boot: true
+          }
+        }
+      }
 
-      expect(driver.boot_disk("server_1")).to eq(disk)
+      allow(driver).to receive(:config).and_return(config)
+      allow(driver).to receive(:valid_disk_type?).and_return(true)
+      driver.create_disks_config("create")
+      expect(config[:disks][:disk1][:autodelete_disk]).to eq(true)
+      expect(config[:disks][:disk1][:disk_type]).to eq("pd-standard")
+      expect(config[:disks][:disk1][:disk_size]).to eq(10)
+    end
+
+    it "creates the default disk config with no config" do
+      config = {}
+
+      allow(driver).to receive(:config).and_return(config)
+      allow(driver).to receive(:valid_disk_type?).and_return(true)
+      driver.create_disks_config("create")
+      expect(config[:disks][:disk1][:autodelete_disk]).to eq(true)
+      expect(config[:disks][:disk1][:disk_type]).to eq("pd-standard")
+      expect(config[:disks][:disk1][:disk_size]).to eq(10)
+    end
+  end
+
+  describe "#create_disks" do
+    it "sets up a boot disk if boot is present and returns it" do
+
+      config = {
+        disks: {
+          disk1: {
+            boot: true
+          }
+        }
+      }
+
+      allow(driver).to receive(:config).and_return(config)
+      disk = driver.create_disks("server_1")
+      expect(disk.first.initialize_params.disk_name).to eq("server_1-disk1")
+      expect(disk.first.is_a?(Google::Apis::ComputeV1::AttachedDisk)).to eq(true)
+      expect(disk.first.boot).to eq(true)
+    end
+
+    it "sets up an attached disk if boot is not present and returns it" do
+      config = {
+        disks: {
+          disk1: {
+            autodelete_disk: false
+          }
+        }
+      }
+      connection = double("connection")
+      item = double("item")
+      allow(driver).to receive(:connection).and_return(connection)
+      allow(driver).to receive(:wait_for_operation).and_return(true)
+      allow(item).to receive(:status).and_return("READY")
+      allow(connection).to receive(:insert_disk).and_return("DONE")
+      allow(connection).to receive(:get_disk).with(project, zone, "server_1-disk1").and_return(item)
+      allow(driver).to receive(:config).and_return(config)
+      disk = driver.create_disks("server_1")
+      expect(disk.first.is_a?(Google::Apis::ComputeV1::AttachedDisk)).to eq(true)
+      expect(disk.first.source).to eq("projects/#{project}/zones/#{zone}/disks/server_1-disk1")
+    end
+
+    it "sets up a boot disk and an attached disk if two disks are defined" do
+      config = {
+        disks: {
+          disk1: {
+            autodelete_disk: false
+          },
+          disk2: {
+            disk_size: 15
+          }
+        }
+      }
+      connection = double("connection")
+      item = double("item")
+      allow(driver).to receive(:connection).and_return(connection)
+      allow(driver).to receive(:wait_for_operation).and_return(true)
+      allow(item).to receive(:status).and_return("READY")
+      allow(connection).to receive(:insert_disk).and_return("DONE")
+      allow(connection).to receive(:get_disk).with(project, zone, "server_1-disk2").and_return(item)
+      allow(connection).to receive(:get_disk).with(project, zone, "server_1-disk1").and_return(item)
+      allow(driver).to receive(:config).and_return(config)
+      disks = driver.create_disks("server_1")
+      expect(disks.first.is_a?(Google::Apis::ComputeV1::AttachedDisk)).to eq(true)
+      expect(disks.first.source).to eq("projects/#{project}/zones/#{zone}/disks/server_1-disk1")
+      expect(disks.last.is_a?(Google::Apis::ComputeV1::AttachedDisk)).to eq(true)
+      expect(disks.last.source).to eq("projects/#{project}/zones/#{zone}/disks/server_1-disk2")
     end
   end
 
