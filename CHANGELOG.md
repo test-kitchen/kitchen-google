@@ -1,3 +1,15 @@
+## 1.5.2 / 2018-03-14
+
+ * Local SSDs can now be added as scratch disks
+
+## 1.5.1 / 2018-03-08
+
+ * Added support for Windows Server 2008R2 and later
+
+## 1.5.0 / 2018-02-26
+
+ * Add support for additional disks to be attached to the instance
+
 ## 1.4.0 / 2017-09-28
 
  * #47: Add support for Google Shared VPC Networks (XPN)

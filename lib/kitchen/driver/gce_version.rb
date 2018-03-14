@@ -18,6 +18,6 @@
 
 module Kitchen
   module Driver
-    GCE_VERSION = "1.4.0".freeze
+    GCE_VERSION = "1.5.2".freeze
   end
 end
