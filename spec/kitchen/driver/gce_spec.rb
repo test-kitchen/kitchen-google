@@ -771,7 +771,6 @@ describe Kitchen::Driver::Gce do
       }
 
       connection = double("connection")
-      image = double("image")
       allow(driver).to receive(:config).and_return(config)
       allow(driver).to receive(:connection).and_return(connection)
       disk = driver.create_disks("server_1")
