@@ -323,7 +323,7 @@ module Kitchen
       end
 
       def valid_disk_name?(disk_name)
-        return disk_name.to_s.match(DISK_NAME_REGEX).to_s.length == disk_name.length
+        disk_name.to_s.match(DISK_NAME_REGEX).to_s.length == disk_name.length
       end
 
       def image_exist?
