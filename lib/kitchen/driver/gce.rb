@@ -161,21 +161,22 @@ module Kitchen
         if old_disk_configuration_present?
           # If the old disk configuration is used,
           # we'll convert it to the new one
-          config[:disks] = {}
-          config[:disks][server_name] = {
-            boot: true,
+          config[:disks] = {
+            disk1: {
+              boot: true,
+              autodelete_disk: config.fetch(:autodelete_disk, disk_default_config[:autodelete_disk]),
+              disk_size: config.fetch(:disk_size, disk_default_config[:disk_size]),
+              disk_type: config.fetch(:disk_type, disk_default_config[:disk_type]),
+            }
           }
-          config[:disks][server_name][:autodelete_disk] = config[:autodelete_disk].nil? ? disk_default_config[:autodelete_disk] : config[:autodelete_disk]
-          config[:disks][server_name][:disk_size] = config[:disk_size].nil? ? disk_default_config[:disk_size] : config[:disk_size]
-          config[:disks][server_name][:disk_type] = config[:disk_type].nil? ? disk_default_config[:disk_type] : config[:disk_type]
-          raise "Disk type #{config[:disks][server_name][:disk_type]} is not valid" unless valid_disk_type?(config[:disks][server_name][:disk_type])
+          raise "Disk type #{config[:disks][:disk1][:disk_type]} is not valid" unless valid_disk_type?(config[:disks][:disk1][:disk_type])
         elsif new_disk_configuration_present?
           # If the new disk configuration is present, ensure that for
           # every disk the needed configuration is set
           boot_disk_counter = 0
           config[:disks].each do |disk_name, disk_config|
             # te&/ => te
-            raise "Disk name invalid. Must match #{DISK_NAME_REGEX}." if disk_name.to_s.match(DISK_NAME_REGEX).to_s.length < disk_name.length
+            raise "Disk name invalid. Must match #{DISK_NAME_REGEX}." unless valid_disk_name?(disk_name)
 
             # Update the config for the disk with the fixed config
             config[:disks][disk_name.to_sym] = disk_default_config.merge(disk_config)
@@ -319,6 +320,10 @@ module Kitchen
       def valid_disk_type?(disk_type)
         return false if disk_type.nil?
         check_api_call { connection.get_disk_type(project, zone, disk_type) }
+      end
+
+      def valid_disk_name?(disk_name)
+        return disk_name.to_s.match(DISK_NAME_REGEX).to_s.length == disk_name.length
       end
 
       def image_exist?

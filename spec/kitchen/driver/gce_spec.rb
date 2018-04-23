@@ -655,12 +655,11 @@ describe Kitchen::Driver::Gce do
       }
 
       allow(driver).to receive(:config).and_return(config)
-      allow(driver).to receive(:server_name).and_return("server-1")
       allow(driver).to receive(:valid_disk_type?).and_return(true)
       driver.create_disks_config
-      expect(config[:disks]["server-1"][:autodelete_disk]).to eq(true)
-      expect(config[:disks]["server-1"][:disk_type]).to eq("pd-standard")
-      expect(config[:disks]["server-1"][:disk_size]).to eq(30)
+      expect(config[:disks][:disk1][:autodelete_disk]).to eq(true)
+      expect(config[:disks][:disk1][:disk_type]).to eq("pd-standard")
+      expect(config[:disks][:disk1][:disk_size]).to eq(30)
     end
 
     it "creates the default disk config, with an incomplete new configuration" do
