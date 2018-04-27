@@ -1,113 +1,153 @@
-## 1.4.0 / 2017-09-28
+# Change Log
 
- * #47: Add support for Google Shared VPC Networks (XPN)
+## [v1.5.0](https://github.com/test-kitchen/kitchen-google/tree/v1.5.0)
 
-## 1.3.0 / 2017-09-15
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.4.0...v1.5.0)
 
- * #43: support adding custom metadata to instances
- * #52: update user agent string, doc update to replace deprecated gcloud switches
- * #53: Rubocop and Travis updates
- * #54: option to set a custom instance name
- * #55: doc update on how to inject ssh keys with custom metadata
+**Closed issues:**
 
-## 1.2.0 / 2017-02-02
+- Driver waits forever after creating instance [\#49](https://github.com/test-kitchen/kitchen-google/issues/49)
 
- * #44: support image_family
+**Merged pull requests:**
 
-## 1.1.0 / 2016-03-17
+- Added support for additional disks; Windows Server 2008R2 support; Ad… [\#62](https://github.com/test-kitchen/kitchen-google/pull/62) ([stiller-leser](https://github.com/stiller-leser))
+- Updated README [\#60](https://github.com/test-kitchen/kitchen-google/pull/60) ([jjasghar](https://github.com/jjasghar))
 
- * #32: Rubocop and Rake fixes to address Travis test issues
- * #33: Automatically disable auto-restart and auto-migrate when using preemptible instances
- * #34: Support for using subnetworks
- * #35: Support for gcloud-style image aliases (i.e. "centos-7" will get you the latest CentOS image)
+## [v1.4.0](https://github.com/test-kitchen/kitchen-google/tree/v1.4.0) (2017-09-28)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.3.0...v1.4.0)
 
-## 1.0.0 / 2016-03-10
+**Merged pull requests:**
 
-### New Features
+- release 1.4.0 [\#56](https://github.com/test-kitchen/kitchen-google/pull/56) ([robbkidd](https://github.com/robbkidd))
+- Add support for Google Shared VPC Networks \(XPN\) [\#47](https://github.com/test-kitchen/kitchen-google/pull/47) ([zbikmarc](https://github.com/zbikmarc))
 
- * #30: use of gcloud authentication files instead of requiring new service accounts
- * #30: support for service account scope aliases in addition to regular full names/URLs
- * #30: support for automated public project searching for well-known disk images
+## [v1.3.0](https://github.com/test-kitchen/kitchen-google/tree/v1.3.0) (2017-09-15)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.2.0...v1.3.0)
 
-### Improvements
+**Closed issues:**
 
- * #30: rewrite using the google-api-client
- * #30: use of the new Test Kitchen 1.4+ transport plugins
- * #30: additional user feedback during API interactions
+- Driver not in load path in latest chefdk [\#50](https://github.com/test-kitchen/kitchen-google/issues/50)
+- Disable instance\_name suffix generation [\#46](https://github.com/test-kitchen/kitchen-google/issues/46)
+- 'Preparing modules for first use' Causing Tests to Fail [\#45](https://github.com/test-kitchen/kitchen-google/issues/45)
+- Allow instance\_name prefix to be customizable [\#40](https://github.com/test-kitchen/kitchen-google/issues/40)
+- Allow default instance\_name prefix to be customizable [\#39](https://github.com/test-kitchen/kitchen-google/issues/39)
+- Sort out ruby-1.9 support [\#25](https://github.com/test-kitchen/kitchen-google/issues/25)
+- Unsupported parameters are silently ignored [\#23](https://github.com/test-kitchen/kitchen-google/issues/23)
+- setting scope on service accounts [\#20](https://github.com/test-kitchen/kitchen-google/issues/20)
+- I can not get your sample .kitchen.yml to work. [\#15](https://github.com/test-kitchen/kitchen-google/issues/15)
 
-## 0.3.0 / 2016-01-23
+**Merged pull requests:**
 
-### New Features
+- add example for injecting ssh key to instance\(s\) [\#55](https://github.com/test-kitchen/kitchen-google/pull/55) ([robbkidd](https://github.com/robbkidd))
+- Option to override instance names [\#54](https://github.com/test-kitchen/kitchen-google/pull/54) ([robbkidd](https://github.com/robbkidd))
+- update Ruby versions to test for in Travis [\#53](https://github.com/test-kitchen/kitchen-google/pull/53) ([robbkidd](https://github.com/robbkidd))
+- Changing SSH Command [\#52](https://github.com/test-kitchen/kitchen-google/pull/52) ([rambleraptor](https://github.com/rambleraptor))
+- Support configured custom metadata [\#43](https://github.com/test-kitchen/kitchen-google/pull/43) ([dldinternet](https://github.com/dldinternet))
 
-* #14: Support service_accounts option in Fog
-* #22: Add JSON credential file and Preemptible VM support
+## [v1.2.0](https://github.com/test-kitchen/kitchen-google/tree/v1.2.0) (2017-02-03)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.1.0...v1.2.0)
 
-### Improvements
+**Closed issues:**
 
-* Move to test-kitchen GitHub org
-* Fixes to tests
+- Ability to support image-family [\#41](https://github.com/test-kitchen/kitchen-google/issues/41)
+- Transition to fog-google [\#24](https://github.com/test-kitchen/kitchen-google/issues/24)
 
-## 0.2.0 / 2014-09-20
+**Merged pull requests:**
 
-### Improvements
+- Support image\_family [\#44](https://github.com/test-kitchen/kitchen-google/pull/44) ([whiteley](https://github.com/whiteley))
 
-* #10: Deprecate "area" in configuration for "region"
-* #11: Fix name length, via @pdunnavant
-* #12: Generate instance names that are valid for GCE
+## [v1.1.0](https://github.com/test-kitchen/kitchen-google/tree/v1.1.0) (2016-03-17)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.0.0...v1.1.0)
 
-## 0.1.2 / 2014-04-16
+**Merged pull requests:**
 
-### New Features
+- Adding support for image aliases [\#35](https://github.com/test-kitchen/kitchen-google/pull/35) ([adamleff](https://github.com/adamleff))
+- Add support for using subnetworks [\#34](https://github.com/test-kitchen/kitchen-google/pull/34) ([adamleff](https://github.com/adamleff))
+- Automatically disable auto-restart and auto-migrate for preemptible instance [\#33](https://github.com/test-kitchen/kitchen-google/pull/33) ([adamleff](https://github.com/adamleff))
+- Rake and rubocop fixes [\#32](https://github.com/test-kitchen/kitchen-google/pull/32) ([adamleff](https://github.com/adamleff))
 
-* Add documentation for new asia-east1 region.
+## [v1.0.0](https://github.com/test-kitchen/kitchen-google/tree/v1.0.0) (2016-03-10)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.3.0...v1.0.0)
 
-### Improvements
+**Closed issues:**
 
-* #9: Dependency updates: Remove faraday version constraint; require newer
-  ridley gem.
+- Add @erjohnso and @adamleff to kitchen-google repo and gem [\#31](https://github.com/test-kitchen/kitchen-google/issues/31)
 
-## 0.1.0 / 2014-03-29
+**Merged pull requests:**
 
-### New Features
+- Rewrite of kitchen-google to use google-api-client [\#30](https://github.com/test-kitchen/kitchen-google/pull/30) ([adamleff](https://github.com/adamleff))
 
-* PR #7: Add support for specifying SSH keys in public_key_path, via @someara
-* Add support for setting username
-* Support GCE v1 API, including persistent disks.
+## [v0.3.0](https://github.com/test-kitchen/kitchen-google/tree/v0.3.0) (2016-01-24)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.2.0...v0.3.0)
 
-### Improvements
+**Closed issues:**
 
-* Add rspec tests and Travis support.
+- Add auto\_restart to tests [\#27](https://github.com/test-kitchen/kitchen-google/issues/27)
+- Add docs for Preemptible instances [\#26](https://github.com/test-kitchen/kitchen-google/issues/26)
+- GCE Instance created without scoping the service account [\#21](https://github.com/test-kitchen/kitchen-google/issues/21)
+- Investigate moving project to test-kitchen organization [\#16](https://github.com/test-kitchen/kitchen-google/issues/16)
+- server timeout on custom images.  [\#13](https://github.com/test-kitchen/kitchen-google/issues/13)
 
-## 0.0.6 / 2014-02-23:
+**Merged pull requests:**
 
-* Require Ruby 1.9 or greater.
+- Preemptible documentation [\#28](https://github.com/test-kitchen/kitchen-google/pull/28) ([Temikus](https://github.com/Temikus))
+- Add JSON credential file and Preemptible VM support [\#22](https://github.com/test-kitchen/kitchen-google/pull/22) ([marcy-terui](https://github.com/marcy-terui))
+- Add code formatting and relative links. [\#18](https://github.com/test-kitchen/kitchen-google/pull/18) ([mbrukman](https://github.com/mbrukman))
+- Update badge URLs now that repo moved. [\#17](https://github.com/test-kitchen/kitchen-google/pull/17) ([mbrukman](https://github.com/mbrukman))
+- Support service\_accounts option in Fog [\#14](https://github.com/test-kitchen/kitchen-google/pull/14) ([jgoldschrafe](https://github.com/jgoldschrafe))
 
-### Improvements
+## [v0.2.0](https://github.com/test-kitchen/kitchen-google/tree/v0.2.0) (2014-09-20)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.1.2...v0.2.0)
 
-* Add support for specifying GCE network and tags.
+**Closed issues:**
 
-### Bug fixes
+- generate\_inst\_name should only produce names that meet Google's requirements [\#12](https://github.com/test-kitchen/kitchen-google/issues/12)
+- Add "region" support, deprecate "area" [\#10](https://github.com/test-kitchen/kitchen-google/issues/10)
 
-* Temporarily pin Fog version to 1.19.0 until 1.20.0 support is added.
-* Require Faraday Gem version to be ~> 0.8.9; 0.9.0 breaks test-kitchen.
+**Merged pull requests:**
 
-## 0.0.4 / 2013-12-28
+- Fix name length. [\#11](https://github.com/test-kitchen/kitchen-google/pull/11) ([pdunnavant](https://github.com/pdunnavant))
 
-### Bug fixes
+## [v0.1.2](https://github.com/test-kitchen/kitchen-google/tree/v0.1.2) (2014-04-16)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.1.0...v0.1.2)
 
-* In GCE, instance names must be unique; derive by default from
-  `<suite>-<platform>` and a UUID.
-* Fix bug where running `kitchen create` multiple times would create
-  duplicate instances.
-* Require version of Fog with exponential backoff in GCE API queries.
+**Closed issues:**
 
-### Improvements
+- Support Faraday 1.9 via ridley \>= 3.0.0 [\#9](https://github.com/test-kitchen/kitchen-google/issues/9)
 
-* README formatting and clarity fixes.
-* Add concept of an "area" (us, europe, any) to automatically select
-  an availability zone from those that are up within the requested
-  area for each instance.
+## [v0.1.0](https://github.com/test-kitchen/kitchen-google/tree/v0.1.0) (2014-03-29)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.6.0...v0.1.0)
 
-## 0.0.1 / 2013-10-20
+**Closed issues:**
 
-### Initial release
+- Update Copyright [\#8](https://github.com/test-kitchen/kitchen-google/issues/8)
+- Support Fog 1.20.0 [\#6](https://github.com/test-kitchen/kitchen-google/issues/6)
+
+**Merged pull requests:**
+
+- adding support for using authorized\_keys from a service account [\#7](https://github.com/test-kitchen/kitchen-google/pull/7) ([someara](https://github.com/someara))
+
+## [v0.6.0](https://github.com/test-kitchen/kitchen-google/tree/v0.6.0) (2014-02-23)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/0.0.4...v0.6.0)
+
+**Closed issues:**
+
+- Network and Tag Support [\#5](https://github.com/test-kitchen/kitchen-google/issues/5)
+
+## [0.0.4](https://github.com/test-kitchen/kitchen-google/tree/0.0.4) (2013-12-28)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/0.0.1...0.0.4)
+
+**Fixed bugs:**
+
+- test-kitchen 1.0.0.rc.1 breaks auto name generation [\#2](https://github.com/test-kitchen/kitchen-google/issues/2)
+- Provisioning fails with "Class: Kitchen::ActionFailed" [\#1](https://github.com/test-kitchen/kitchen-google/issues/1)
+
+**Closed issues:**
+
+- "kitchen create" duplicates instances [\#4](https://github.com/test-kitchen/kitchen-google/issues/4)
+- Intermittent Kitchen::ActionFailed - eventually consistent GCE API? [\#3](https://github.com/test-kitchen/kitchen-google/issues/3)
+
+## [0.0.1](https://github.com/test-kitchen/kitchen-google/tree/0.0.1) (2013-10-20)
+
+
+\* *This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)*
