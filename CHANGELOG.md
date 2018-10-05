@@ -2,7 +2,8 @@
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.5.0...v1.6.0)
 
- * #59: Add support for GCE instance labels and loosen the Google API dependencies
+ * #59: Add support for GCE instance labels
+ * Resolve minor Chefstyle warnings
 
 ## [v1.5.0](https://github.com/test-kitchen/kitchen-google/tree/v1.5.0)
 
