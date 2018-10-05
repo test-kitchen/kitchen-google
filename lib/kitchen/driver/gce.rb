@@ -51,7 +51,7 @@ module Kitchen
         "useraccounts-ro"    => "cloud.useraccounts.readonly",
         "useraccounts-rw"    => "cloud.useraccounts",
         "userinfo-email"     => "userinfo.email",
-      }
+      }.freeze
 
       kitchen_driver_api_version 2
       plugin_version Kitchen::Driver::GCE_VERSION
@@ -168,7 +168,7 @@ module Kitchen
               autodelete_disk: config.fetch(:autodelete_disk, disk_default_config[:autodelete_disk]),
               disk_size: config.fetch(:disk_size, disk_default_config[:disk_size]),
               disk_type: config.fetch(:disk_type, disk_default_config[:disk_type]),
-            }
+            },
           }
           raise "Disk type #{config[:disks][:disk1][:disk_type]} is not valid" unless valid_disk_type?(config[:disks][:disk1][:disk_type])
         elsif new_disk_configuration_present?
