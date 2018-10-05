@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.email       = ["andy@hurricane-ridge.com", "partnereng@chef.io"]
   s.files       = `git ls-files`.split($/)
   s.homepage    = "https://github.com/test-kitchen/kitchen-google"
-  s.license     = "Apache 2.0"
+  s.license     = "Apache-2.0"
 
   s.add_dependency "gcewinpass",        "~> 1.1"
   s.add_dependency "google-api-client", "~> 0.19"
@@ -20,10 +20,8 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency "bundler"
   s.add_development_dependency "pry"
-  s.add_development_dependency "rake", "~> 10.5"
+  s.add_development_dependency "rake"
   s.add_development_dependency "rspec"
-  s.add_development_dependency "rubocop"
-  s.add_development_dependency "json"
   s.add_development_dependency "byebug"
 
   s.required_ruby_version = ">= 2.0"

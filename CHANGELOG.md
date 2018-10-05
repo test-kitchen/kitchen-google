@@ -4,6 +4,7 @@
 
  * #59: Add support for GCE instance labels
  * Resolve minor Chefstyle warnings
+ * Simplify and loosen dev deps
 
 ## [v1.5.0](https://github.com/test-kitchen/kitchen-google/tree/v1.5.0)
 
