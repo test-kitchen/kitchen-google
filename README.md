@@ -15,7 +15,7 @@ providers, GCE has a couple of advantages for Chef cookbook testing:
 
 ### Ruby Version
 
-Ruby 2.0 or greater.
+Ruby 2.3 or greater.
 
 ### Google Cloud Platform (GCP) Project
 A [Google Cloud Platform](https://cloud.google.com) account is
@@ -287,7 +287,7 @@ Default:
 
 ### Disk configuration
 
-NOTE: In order to support multiple disks in this driver, the disk configuration has been reworked. However, old .kitchen-files will keep working and simply be adapted automatically. 
+NOTE: In order to support multiple disks in this driver, the disk configuration has been reworked. However, old .kitchen-files will keep working and simply be adapted automatically.
 
 ```yaml
 driver:

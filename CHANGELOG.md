@@ -1,8 +1,10 @@
-## [v1.6.0](https://github.com/test-kitchen/kitchen-google/tree/v1.6.0)
+## [v2.0.0](https://github.com/test-kitchen/kitchen-google/tree/v2.0.0)
 
-[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.5.0...v1.6.0)
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.5.0...v2.0.0)
 
  * #59: Add support for GCE instance labels
+ * Require Ruby 2.3 or later
+ * Reduced the number of files we ship in the Gem to reduce install size
  * Resolve minor Chefstyle warnings
  * Simplify and loosen dev deps
 
