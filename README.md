@@ -1,7 +1,8 @@
 # Kitchen::Gce - A Test Kitchen Driver for Google Compute Engine
 
-[![Build Status](https://travis-ci.org/test-kitchen/kitchen-google.png?branch=master)](https://travis-ci.org/test-kitchen/kitchen-google)
-[![Code Climate](https://codeclimate.com/github/test-kitchen/kitchen-google.png)](https://codeclimate.com/github/test-kitchen/kitchen-google)
+[![Build Status](https://travis-ci.org/test-kitchen/kitchen-google.svg?branch=master)](https://travis-ci.org/test-kitchen/kitchen-google)
+[![Code Climate](https://codeclimate.com/github/test-kitchen/kitchen-google.svg)](https://codeclimate.com/github/test-kitchen/kitchen-google)
+[![Gem Version](https://badge.fury.io/rb/kitchen-google.svg)](https://badge.fury.io/rb/kitchen-google)
 
 This is a [Test Kitchen](https://github.com/opscode/test-kitchen/)
 driver for Google Compute Engine.  While similar to EC2 and other IaaS
@@ -31,7 +32,7 @@ Google Cloud API. The auth library expects that there is a JSON credentials file
 `~/.config/gcloud/application_default_credentials.json`
 
 The easiest way to create this is to download and install the [Google Cloud SDK](https://cloud.google.com/sdk/) and run the
-`gcloud auth login` command which will create the credentials file for you.
+`gcloud auth application-default login` command which will create the credentials file for you.
 
 If you already have a file you'd like to use that is in a different location, set the
 `GOOGLE_APPLICATION_CREDENTIALS` environment variable with the full path to that file.
@@ -190,30 +191,10 @@ must be unique.  By default, a unique name will be auto-generated; note that
 auto-generated names must be used if there is more than one test suite.  Default:
 `tk-<suite>-<platform>-<UUID>`
 
-### `autodelete_disk`
-
-Boolean specifying whether or not to automatically delete boot disk
-for test instance.  Default: `true`
-
-NOTE: If you set this to false, once Test Kitchen destroys your instance,
-the boot disk used will remain in your project. You will need to manually delete it to
-avoid consuming unused resources by either using the `gcloud compute disks delete`
-command in the GCP SDK or by using `knife google disk delete` from
-[knife-google](https://github.com/chef/knife-google).
-
 ### `auto_migrate`
 
 Boolean specifying whether or not to automatically migrate the instance
 to a host in the event of host maintenance. Default: `false`
-
-### `disk_size`
-
-Size, in gigabytes, of boot disk.  Default: `10`.
-
-Some images, such as windows images, have a larger source image size
-and require the disk_size to be the same size or larger than the source.
-An error message will be displayed to you indicating this requirement
-if necessary.
 
 ### `email`
 
@@ -304,6 +285,62 @@ Default:
     "test-kitchen-instance" => <instance.name>,
     "test-kitchen-user"     => <env_user>,
 
+### Disk configuration
+
+NOTE: In order to support multiple disks in this driver, the disk configuration has been reworked. However, old .kitchen-files will keep working and simply be adapted automatically. 
+
+```yaml
+driver:
+  disks:
+    disk0:
+      autodelete_disk: false
+    disk1:
+      disk_size: 30
+    disk2:
+      disk_size: 50
+```
+
+In the above example the `disk0` would be automatically be used as the bootdisk (/dev/sda), `disk1` would be mounted as /dev/sdb and be 30 gigabytes in size. `disk2` would be mounted as /dev/sdc and 50 gigabytes in size. Any of these disks could be the bootdisk (see below), but since none is specified, disk0 is automatically elected. Note that if `disk1` would be set as bootdisk using `boot: true` it will be mounted as /dev/sda.
+
+#### `boot`
+
+Specifies wether or not a disk should be used as the boot disk for the instance. By default the first disk will be used as boot disk.
+
+#### `autodelete_disk` - deprecated as standalone option
+
+Boolean specifying whether or not to automatically delete boot disk
+for test instance.  Default: `true`
+
+*This option is deprecated as a standlone configuration, but can be applied on a per disk level.*
+
+NOTE: If you set this to false, once Test Kitchen destroys your instance,
+the boot disk used will remain in your project. You will need to manually delete it to
+avoid consuming unused resources by either using the `gcloud compute disks delete`
+command in the GCP SDK or by using `knife google disk delete` from
+[knife-google](https://github.com/chef/knife-google).
+
+#### `disk_size` - deprecated as standalone option
+
+Size, in gigabytes, of boot disk.  Default: `10`.
+
+*This option is deprecated as a standlone configuration, but can be applied on a per disk level.*
+
+Some images, such as windows images, have a larger source image size
+and require the disk_size to be the same size or larger than the source.
+An error message will be displayed to you indicating this requirement
+if necessary.
+
+#### `disk_type` - deprecated as standalone option
+
+Type of the disk. Default: `pd-standard`.
+
+*This option is deprecated as a standlone configuration, but can be applied on a per disk level.*
+
+Valid disk types:
+
+ - `pd-standard`: Attached magnetic hard drive
+ - `pd-ssd`: Attached SSD
+ - `local-ssd`: [Local scratch SSD](https://cloud.google.com/compute/docs/disks/#localssds). NOTE: You cannot specify their size. They always are 375 GB!
 
 ### Transport Settings
 

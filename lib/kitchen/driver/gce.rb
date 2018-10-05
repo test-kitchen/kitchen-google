@@ -61,9 +61,6 @@ module Kitchen
       default_config :region, nil
       default_config :zone, nil
 
-      default_config :autodelete_disk, true
-      default_config :disk_size, 10
-      default_config :disk_type, "pd-standard"
       default_config :machine_type, "n1-standard-1"
       default_config :network, "default"
       default_config :network_project, nil
@@ -86,6 +83,8 @@ module Kitchen
       default_config :metadata, {}
       default_config :labels, {}
 
+      DISK_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/
+
       def name
         "Google Compute (GCE)"
       end
@@ -98,10 +97,11 @@ module Kitchen
 
         server_name = generate_server_name
 
+        create_disks_config
+
         info("Creating GCE instance <#{server_name}> in project #{project}, zone #{zone}...")
         operation = connection.insert_instance(project, zone, create_instance_object(server_name))
 
-        info("Zone operation #{operation.name} created. Waiting for it to complete...")
         wait_for_operation(operation)
 
         server              = server_instance(server_name)
@@ -142,6 +142,77 @@ module Kitchen
         state.delete(:zone)
       end
 
+      def old_disk_configuration_present?
+        !config[:autodelete_disk].nil? || !config[:disk_size].nil? || !config[:disk_type].nil?
+      end
+
+      def new_disk_configuration_present?
+        !config[:disks].nil?
+      end
+
+      def create_disks_config
+        # This can't be present in default_config because we couldn't
+        # determine which disk configuration the user used otherwise
+        disk_default_config = {
+          autodelete_disk: true,
+          disk_size: 10,
+          disk_type: "pd-standard",
+        }
+
+        if old_disk_configuration_present?
+          # If the old disk configuration is used,
+          # we'll convert it to the new one
+          config[:disks] = {
+            disk1: {
+              boot: true,
+              autodelete_disk: config.fetch(:autodelete_disk, disk_default_config[:autodelete_disk]),
+              disk_size: config.fetch(:disk_size, disk_default_config[:disk_size]),
+              disk_type: config.fetch(:disk_type, disk_default_config[:disk_type]),
+            }
+          }
+          raise "Disk type #{config[:disks][:disk1][:disk_type]} is not valid" unless valid_disk_type?(config[:disks][:disk1][:disk_type])
+        elsif new_disk_configuration_present?
+          # If the new disk configuration is present, ensure that for
+          # every disk the needed configuration is set
+          boot_disk_counter = 0
+          config[:disks].each do |disk_name, disk_config|
+            # te&/ => te
+            raise "Disk name invalid. Must match #{DISK_NAME_REGEX}." unless valid_disk_name?(disk_name)
+
+            # Update the config for the disk with the fixed config
+            config[:disks][disk_name.to_sym] = disk_default_config.merge(disk_config)
+
+            # Since the config was altered, we can't use disk_config (as it will be different or keys will not be present)
+            raise "Disk type #{config[:disks][disk_name.to_sym][:disk_type]} for disk #{disk_name} is not valid" unless valid_disk_type?(config[:disks][disk_name.to_sym][:disk_type])
+
+            unless disk_config[:boot].nil?
+              boot_disk_counter += 1
+              raise "Boot disk cannot be local SSD." if disk_config[:disk_type] == "local-ssd"
+            end
+
+            if disk_config[:disk_type] == "local-ssd"
+              raise "#{disk_name}: Cannot use 'disk_size' with local SSD. They always have 375 GB (https://cloud.google.com/compute/docs/disks/#localssds)." unless disk_config[:disk_size].nil?
+              # Since disk_size is set to 10 in default_config, it needs to be adjusted for local SSDs
+              config[:disks][disk_name.to_sym][:disk_size] = nil
+            end
+          end
+          if boot_disk_counter == 0
+            first_disk = config[:disks].first[0]
+            first_config = config[:disks].first[1]
+            config[:disks][first_disk] = first_config.merge({ boot: true })
+            warn("No bootdisk found - Assuming first disk will be boot disk")
+          elsif boot_disk_counter > 1
+            raise "More than one boot disk specified"
+          end
+        elsif !new_disk_configuration_present?
+          # If no new disk configuration is present,
+          # we'll set up the default configuration for the new style
+          config[:disks] = {
+            "disk1": disk_default_config.merge({ boot: true }),
+          }
+        end
+      end
+
       def validate!
         raise "Project #{config[:project]} is not a valid project" unless valid_project?
         raise "Either zone or region must be specified" unless config[:zone] || config[:region]
@@ -149,12 +220,12 @@ module Kitchen
         raise "Zone #{config[:zone]} is not a valid zone" if config[:zone] && !valid_zone?
         raise "Region #{config[:region]} is not a valid region" if config[:region] && !valid_region?
         raise "Machine type #{config[:machine_type]} is not valid" unless valid_machine_type?
-        raise "Disk type #{config[:disk_type]} is not valid" unless valid_disk_type?
         raise "Either image family or name must be specified" unless config[:image_family] || config[:image_name]
-        raise "Disk image #{config[:image_name]} is not valid - check your image name and image project" if boot_disk_source_image.nil?
         raise "Network #{config[:network]} is not valid" unless valid_network?
         raise "Subnet #{config[:subnet]} is not valid" if config[:subnet] && !valid_subnet?
         raise "Email address of GCE user is not set" if winrm_transport? && config[:email].nil?
+        raise "You cannot use autodelete_disk, disk_size or disk_type with the new disks configuration" if old_disk_configuration_present? && new_disk_configuration_present?
+        raise "Disk image #{config[:image_name]} is not valid - check your image name and image project" if boot_disk_source_image.nil?
 
         warn("Both zone and region specified - region will be ignored.") if config[:zone] && config[:region]
         warn("Both image family and name specified - image family will be ignored") if config[:image_family] && config[:image_name]
@@ -162,6 +233,7 @@ module Kitchen
         warn("Subnet project not specified - searching current project only") if config[:subnet] && !config[:subnet_project]
         warn("Auto-migrate disabled for preemptible instance") if preemptible? && config[:auto_migrate]
         warn("Auto-restart disabled for preemptible instance") if preemptible? && config[:auto_restart]
+        warn("These configs are deprecated - consider using new disks configuration") if old_disk_configuration_present?
       end
 
       def connection
@@ -246,9 +318,13 @@ module Kitchen
         check_api_call { connection.get_region(project, config[:region]) }
       end
 
-      def valid_disk_type?
-        return false if config[:disk_type].nil?
-        check_api_call { connection.get_disk_type(project, zone, config[:disk_type]) }
+      def valid_disk_type?(disk_type)
+        return false if disk_type.nil?
+        check_api_call { connection.get_disk_type(project, zone, disk_type) }
+      end
+
+      def valid_disk_name?(disk_name)
+        disk_name.to_s.match(DISK_NAME_REGEX).to_s.length == disk_name.length
       end
 
       def image_exist?
@@ -328,7 +404,7 @@ module Kitchen
       def create_instance_object(server_name)
         inst_obj                    = Google::Apis::ComputeV1::Instance.new
         inst_obj.name               = server_name
-        inst_obj.disks              = [boot_disk(server_name)]
+        inst_obj.disks              = create_disks(server_name)
         inst_obj.machine_type       = machine_type_url
         inst_obj.metadata           = instance_metadata
         inst_obj.network_interfaces = instance_network_interfaces
@@ -355,23 +431,82 @@ module Kitchen
         name.gsub(/([^-a-z0-9])/, "-")
       end
 
-      def boot_disk(server_name)
+      def create_disks(server_name)
+        disks = []
+
+        config[:disks].each do |disk_name, disk_config|
+          unique_disk_name = "#{server_name}-#{disk_name}"
+          if disk_config[:boot]
+            disk = create_local_disk(unique_disk_name, disk_config)
+            disks.unshift(disk)
+          elsif disk_config[:disk_type] == "local-ssd"
+            disk = create_local_disk(unique_disk_name, disk_config)
+            disks.push(disk)
+          else
+            disk = create_attached_disk(unique_disk_name, disk_config)
+            disks.push(disk)
+          end
+        end
+        disks
+      end
+
+      def create_local_disk(unique_disk_name, disk_config)
         disk   = Google::Apis::ComputeV1::AttachedDisk.new
+        # Specifies the parameters for a new disk that will be created alongside the new instance.
         params = Google::Apis::ComputeV1::AttachedDiskInitializeParams.new
+        disk.boot           = true if !disk_config[:boot].nil? && disk_config[:boot].to_s == "true"
+        disk.auto_delete    = disk_config[:autodelete_disk]
+        params.disk_size_gb = disk_config[:disk_size]
+        params.disk_type    = disk_type_url_for(disk_config[:disk_type])
 
-        disk.boot           = true
-        disk.auto_delete    = config[:autodelete_disk]
-        params.disk_name    = server_name
-        params.disk_size_gb = config[:disk_size]
-        params.disk_type    = disk_type_url_for(config[:disk_type])
-        params.source_image = boot_disk_source_image
-
+        if disk_config[:disk_type] == "local-ssd"
+          info("Creating a 375 GB local ssd as scratch disk (https://cloud.google.com/compute/docs/disks/#localssds).")
+          disk.type = "SCRATCH"
+        else
+          info("Creating a #{disk_config[:disk_size]} GB boot disk named #{unique_disk_name}...")
+          params.source_image = boot_disk_source_image unless disk_config[:disk_type] == "local-ssd"
+          params.disk_name    = unique_disk_name unless disk_config[:disk_type] == "local-ssd"
+        end
         disk.initialize_params = params
         disk
       end
 
+      def create_attached_disk(unique_disk_name, disk_config)
+        disk = Google::Apis::ComputeV1::Disk.new
+        disk.name    = unique_disk_name
+        disk.size_gb = disk_config[:disk_size]
+        disk.type    = disk_type_url_for(disk_config[:disk_type])
+
+        info("Creating a #{disk_config[:disk_size]} GB disk named #{unique_disk_name}...")
+        wait_for_operation(connection.insert_disk(project, zone, disk))
+        info("Waiting for disk to be ready...")
+        wait_for_status("READY") { connection.get_disk(project, zone, unique_disk_name) }
+        info("Disk created successfully.")
+        attached_disk = Google::Apis::ComputeV1::AttachedDisk.new
+        attached_disk.source = disk_self_link(unique_disk_name)
+        attached_disk.auto_delete = disk_config[:autodelete_disk]
+        attached_disk
+      end
+
+      def delete_disk(unique_disk_name)
+        begin
+          connection.get_disk(project, zone, unique_disk_name)
+        rescue Google::Apis::ClientError
+          info("Unable to locate disk #{unique_disk_name} in project #{project}, zone #{zone}")
+          return
+        end
+
+        info("Waiting for disk #{unique_disk_name} to be deleted...")
+        wait_for_operation(connection.delete_disk(project, zone, unique_disk_name))
+        info("Disk #{unique_disk_name} deleted successfully.")
+      end
+
       def disk_type_url_for(type)
         "zones/#{zone}/diskTypes/#{type}"
+      end
+
+      def disk_self_link(unique_disk_name)
+        "projects/#{project}/zones/#{zone}/disks/#{unique_disk_name}"
       end
 
       def boot_disk_source_image
@@ -392,11 +527,20 @@ module Kitchen
       end
 
       def metadata
-        config[:metadata].merge({
-                                    "created-by"            => "test-kitchen",
-                                    "test-kitchen-instance" => instance.name,
-                                    "test-kitchen-user"     => env_user,
-                                })
+        default_metadata = {
+          "created-by"            => "test-kitchen",
+          "test-kitchen-instance" => instance.name,
+          "test-kitchen-user"     => env_user,
+        }
+        if winrm_transport?
+          image_identifier = config[:image_family] || config[:image_name]
+          default_metadata["windows-startup-script-ps1"] = 'netsh advfirewall firewall add rule name="winrm" dir=in action=allow protocol=TCP localport=5985;'
+          if !image_identifier.nil? && image_identifier.include?("2008")
+            default_metadata["windows-startup-script-ps1"] += "winrm quickconfig -q"
+          end
+        end
+
+        config[:metadata].merge(default_metadata)
       end
 
       def instance_metadata
