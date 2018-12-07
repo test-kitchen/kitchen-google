@@ -4,7 +4,7 @@
 [![Code Climate](https://codeclimate.com/github/test-kitchen/kitchen-google.svg)](https://codeclimate.com/github/test-kitchen/kitchen-google)
 [![Gem Version](https://badge.fury.io/rb/kitchen-google.svg)](https://badge.fury.io/rb/kitchen-google)
 
-This is a [Test Kitchen](https://github.com/opscode/test-kitchen/)
+This is a [Test Kitchen](https://github.com/test-kitchen/test-kitchen)
 driver for Google Compute Engine.  While similar to EC2 and other IaaS
 providers, GCE has a couple of advantages for Chef cookbook testing:
 
