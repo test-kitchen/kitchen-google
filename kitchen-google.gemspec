@@ -12,8 +12,7 @@ Gem::Specification.new do |s|
   s.homepage    = "https://github.com/test-kitchen/kitchen-google"
   s.license     = "Apache-2.0"
 
-  s.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR).grep(/LICENSE|^lib/)
-  s.test_files    = s.files.grep(%r{^(test|spec|features)/})
+  s.files         = %w{LICENSE} + Dir.glob("lib/**/*")
   s.require_paths = ["lib"]
 
   s.add_dependency "gcewinpass",        "~> 1.1"
