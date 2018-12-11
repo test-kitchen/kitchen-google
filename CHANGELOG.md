@@ -1,3 +1,10 @@
+## [v2.0.1](https://github.com/test-kitchen/kitchen-google/tree/v2.0.1)
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.0.0...v2.0.1)
+
+- Further slim the gem size on disk
+- Add testing of Ruby 2.6 in Travis
+
 ## [v2.0.0](https://github.com/test-kitchen/kitchen-google/tree/v2.0.0)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.5.0...v2.0.0)
