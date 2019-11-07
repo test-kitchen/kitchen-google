@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_dependency "gcewinpass",        "~> 1.1"
-  s.add_dependency "google-api-client", "~> 0.19"
+  s.add_dependency "google-api-client", "~> 0.34.0"
   s.add_dependency "test-kitchen"
 
   s.add_development_dependency "bundler"
