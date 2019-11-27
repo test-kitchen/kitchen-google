@@ -52,19 +52,18 @@ describe Kitchen::Driver::Gce do
 
   let(:config) do
     {
-      project:    project,
-      zone:       zone,
+      project: project,
+      zone: zone,
       image_name: "test_image",
     }
   end
 
   let(:instance) do
     instance_double(Kitchen::Instance,
-                    logger:    logger,
-                    transport: transport,
-                    platform:  platform,
-                    to_str:    "instance_str"
-                   )
+      logger:    logger,
+      transport: transport,
+      platform:  platform,
+      to_str:    "instance_str")
   end
 
   before do
@@ -190,12 +189,12 @@ describe Kitchen::Driver::Gce do
   describe "#validate!" do
     let(:config) do
       {
-        project:      "test_project",
-        zone:         "test_zone",
+        project: "test_project",
+        zone: "test_zone",
         machine_type: "test_machine_type",
-        disk_type:    "test_disk_type",
-        image_name:   "test_image",
-        network:      "test_network",
+        disk_type: "test_disk_type",
+        image_name: "test_image",
+        network: "test_network",
       }
     end
 
@@ -276,13 +275,13 @@ describe Kitchen::Driver::Gce do
     context "when subnet is set" do
       let(:config) do
         {
-          project:      "test_project",
-          zone:         "test_zone",
-          image_name:   "test_image",
+          project: "test_project",
+          zone: "test_zone",
+          image_name: "test_image",
           machine_type: "test_machine_type",
-          disk_type:    "test_disk_type",
-          network:      "test_network",
-          subnet:       "test_subnet",
+          disk_type: "test_disk_type",
+          network: "test_network",
+          subnet: "test_subnet",
         }
       end
 
@@ -310,10 +309,10 @@ describe Kitchen::Driver::Gce do
     context "both disk configurations are active" do
       let(:config) do
         {
-          project:         "test_project",
-          zone:            "test_zone",
-          image_name:      "test_image",
-          machine_type:    "test_machine_type",
+          project: "test_project",
+          zone: "test_zone",
+          image_name: "test_image",
+          machine_type: "test_machine_type",
           autodelete_disk: true,
           disks: {
             disk0: {
@@ -388,11 +387,11 @@ describe Kitchen::Driver::Gce do
       state          = {}
       winpass        = double("winpass")
       winpass_config = {
-        project:       "test_project",
-        zone:          "test_zone",
+        project: "test_project",
+        zone: "test_zone",
         instance_name: "server_1",
-        email:         "test_email",
-        username:      "test_username",
+        email: "test_email",
+        username: "test_username",
       }
 
       allow(driver).to receive(:state).and_return(state)

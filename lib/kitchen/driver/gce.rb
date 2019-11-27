@@ -32,25 +32,25 @@ module Kitchen
       attr_accessor :state
 
       SCOPE_ALIAS_MAP = {
-        "bigquery"           => "bigquery",
-        "cloud-platform"     => "cloud-platform",
-        "compute-ro"         => "compute.readonly",
-        "compute-rw"         => "compute",
-        "datastore"          => "datastore",
-        "logging-write"      => "logging.write",
-        "monitoring"         => "monitoring",
-        "monitoring-write"   => "monitoring.write",
-        "service-control"    => "servicecontrol",
+        "bigquery" => "bigquery",
+        "cloud-platform" => "cloud-platform",
+        "compute-ro" => "compute.readonly",
+        "compute-rw" => "compute",
+        "datastore" => "datastore",
+        "logging-write" => "logging.write",
+        "monitoring" => "monitoring",
+        "monitoring-write" => "monitoring.write",
+        "service-control" => "servicecontrol",
         "service-management" => "service.management",
-        "sql"                => "sqlservice",
-        "sql-admin"          => "sqlservice.admin",
-        "storage-full"       => "devstorage.full_control",
-        "storage-ro"         => "devstorage.read_only",
-        "storage-rw"         => "devstorage.read_write",
-        "taskqueue"          => "taskqueue",
-        "useraccounts-ro"    => "cloud.useraccounts.readonly",
-        "useraccounts-rw"    => "cloud.useraccounts",
-        "userinfo-email"     => "userinfo.email",
+        "sql" => "sqlservice",
+        "sql-admin" => "sqlservice.admin",
+        "storage-full" => "devstorage.full_control",
+        "storage-ro" => "devstorage.read_only",
+        "storage-rw" => "devstorage.read_write",
+        "taskqueue" => "taskqueue",
+        "useraccounts-ro" => "cloud.useraccounts.readonly",
+        "useraccounts-rw" => "cloud.useraccounts",
+        "userinfo-email" => "userinfo.email",
       }.freeze
 
       kitchen_driver_api_version 2
@@ -83,7 +83,7 @@ module Kitchen
       default_config :metadata, {}
       default_config :labels, {}
 
-      DISK_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/
+      DISK_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/.freeze
 
       def name
         "Google Compute (GCE)"
@@ -192,6 +192,7 @@ module Kitchen
 
             if disk_config[:disk_type] == "local-ssd"
               raise "#{disk_name}: Cannot use 'disk_size' with local SSD. They always have 375 GB (https://cloud.google.com/compute/docs/disks/#localssds)." unless disk_config[:disk_size].nil?
+
               # Since disk_size is set to 10 in default_config, it needs to be adjusted for local SSDs
               config[:disks][disk_name.to_sym][:disk_size] = nil
             end
@@ -295,31 +296,37 @@ module Kitchen
 
       def valid_machine_type?
         return false if config[:machine_type].nil?
+
         check_api_call { connection.get_machine_type(project, zone, config[:machine_type]) }
       end
 
       def valid_network?
         return false if config[:network].nil?
+
         check_api_call { connection.get_network(network_project, config[:network]) }
       end
 
       def valid_subnet?
         return false if config[:subnet].nil?
+
         check_api_call { connection.get_subnetwork(subnet_project, region, config[:subnet]) }
       end
 
       def valid_zone?
         return false if config[:zone].nil?
+
         check_api_call { connection.get_zone(project, config[:zone]) }
       end
 
       def valid_region?
         return false if config[:region].nil?
+
         check_api_call { connection.get_region(project, config[:region]) }
       end
 
       def valid_disk_type?(disk_type)
         return false if disk_type.nil?
+
         check_api_call { connection.get_disk_type(project, zone, disk_type) }
       end
 
@@ -528,9 +535,9 @@ module Kitchen
 
       def metadata
         default_metadata = {
-          "created-by"            => "test-kitchen",
+          "created-by" => "test-kitchen",
           "test-kitchen-instance" => instance.name,
-          "test-kitchen-user"     => env_user,
+          "test-kitchen-user" => env_user,
         }
         if winrm_transport?
           image_identifier = config[:image_family] || config[:image_name]
@@ -577,6 +584,7 @@ module Kitchen
 
       def subnet_url
         return unless config[:subnet]
+
         "projects/#{subnet_project}/regions/#{region}/subnetworks/#{config[:subnet]}"
       end
 
@@ -626,6 +634,7 @@ module Kitchen
 
       def service_account_scope_url(scope)
         return scope if scope.start_with?("https://www.googleapis.com/auth/")
+
         "https://www.googleapis.com/auth/#{translate_scope_alias(scope)}"
       end
 
