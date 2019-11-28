@@ -1,3 +1,9 @@
+## [v2.0.2](https://github.com/test-kitchen/kitchen-google/tree/v2.0.2)
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.0.1...v2.0.2)
+
+- Updating google-api-client depedency to allow for v0.34
+
 ## [v2.0.1](https://github.com/test-kitchen/kitchen-google/tree/v2.0.1)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.0.0...v2.0.1)
