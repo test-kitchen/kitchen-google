@@ -440,13 +440,12 @@ module Kitchen
 
       def create_disks(server_name)
         disks = []
-
         config[:disks].each do |disk_name, disk_config|
           unique_disk_name = "#{server_name}-#{disk_name}"
           if disk_config[:boot]
             disk = create_local_disk(unique_disk_name, disk_config)
             disks.unshift(disk)
-          elsif disk_config[:disk_type] == "local-ssd"
+          elsif (disk_config[:disk_type] == "local-ssd") | disk_config[:custom_image]
             disk = create_local_disk(unique_disk_name, disk_config)
             disks.push(disk)
           else
@@ -469,10 +468,15 @@ module Kitchen
         if disk_config[:disk_type] == "local-ssd"
           info("Creating a 375 GB local ssd as scratch disk (https://cloud.google.com/compute/docs/disks/#localssds).")
           disk.type = "SCRATCH"
-        else
-          info("Creating a #{disk_config[:disk_size]} GB boot disk named #{unique_disk_name}...")
+        elsif disk.boot
+          info("Creating a #{disk_config[:disk_size]} GB boot disk named #{unique_disk_name} from image #{image_name}...")
           params.source_image = boot_disk_source_image unless disk_config[:disk_type] == "local-ssd"
           params.disk_name    = unique_disk_name unless disk_config[:disk_type] == "local-ssd"
+        else
+          info("Creating a #{disk_config[:disk_size]} GB extra disk named #{unique_disk_name} from image #{disk_config[:custom_image]}...")
+          params.source_image = image_url(disk_config[:custom_image]) unless disk_config[:disk_type] == "local-ssd"
+          params.disk_name    = unique_disk_name unless disk_config[:disk_type] == "local-ssd"
+
         end
         disk.initialize_params = params
         disk
@@ -520,8 +524,8 @@ module Kitchen
         @boot_disk_source ||= image_url
       end
 
-      def image_url
-        return "projects/#{image_project}/global/images/#{image_name}" if image_exist?
+      def image_url(image = image_name)
+        return "projects/#{image_project}/global/images/#{image}" if image_exist?(image)
       end
 
       def image_name_for_family(image_family)
