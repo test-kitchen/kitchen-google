@@ -1,6 +1,6 @@
 # Kitchen::Gce - A Test Kitchen Driver for Google Compute Engine
 
-[![Build Status](https://travis-ci.org/test-kitchen/kitchen-google.svg?branch=master)](https://travis-ci.org/test-kitchen/kitchen-google)
+![CI](https://github.com/test-kitchen/kitchen-google/workflows/CI/badge.svg)
 [![Code Climate](https://codeclimate.com/github/test-kitchen/kitchen-google.svg)](https://codeclimate.com/github/test-kitchen/kitchen-google)
 [![Gem Version](https://badge.fury.io/rb/kitchen-google.svg)](https://badge.fury.io/rb/kitchen-google)
 
