@@ -21,7 +21,7 @@ require "gcewinpass"
 require "google/apis/compute_v1"
 require "kitchen"
 require_relative "gce_version"
-require "securerandom"
+require "securerandom" unless defined?(SecureRandom)
 
 module Kitchen
   module Driver
