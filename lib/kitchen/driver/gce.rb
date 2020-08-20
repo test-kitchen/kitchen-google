@@ -334,8 +334,8 @@ module Kitchen
         disk_name.to_s.match(DISK_NAME_REGEX).to_s.length == disk_name.length
       end
 
-      def image_exist?
-        check_api_call { connection.get_image(image_project, image_name) }
+      def image_exist?(image = image_name)
+        check_api_call { connection.get_image(image_project, image) }
       end
 
       def server_exist?(server_name)
@@ -445,7 +445,7 @@ module Kitchen
           if disk_config[:boot]
             disk = create_local_disk(unique_disk_name, disk_config)
             disks.unshift(disk)
-          elsif (disk_config[:disk_type] == "local-ssd") | disk_config[:custom_image]
+          elsif (disk_config[:disk_type] == "local-ssd") || disk_config[:custom_image]
             disk = create_local_disk(unique_disk_name, disk_config)
             disks.push(disk)
           else
