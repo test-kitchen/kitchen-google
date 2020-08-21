@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
 require "kitchen/driver/gce_version"
 
