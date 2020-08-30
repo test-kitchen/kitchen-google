@@ -217,6 +217,11 @@ GCE instance type (size) to launch; default: `n1-standard-1`
 
 GCE network that instance will be attached to; default: `default`
 
+### `network_ip`
+
+An IPv4 internal IP address to assign to the instance. If not specified, an
+unused internal IP is automatically assigned.
+
 ### `network_project`
 
 GCE project which network belongs to; default is same as `project`
