@@ -1,3 +1,4 @@
+#
 # Author:: Andrew Leonard (<andy@hurricane-ridge.com>)
 # Author:: Chef Partner Engineering (<partnereng@chef.io>)
 #
