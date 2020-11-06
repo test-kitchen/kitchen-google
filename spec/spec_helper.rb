@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Author:: Andrew Leonard (<andy@hurricane-ridge.com>)
 #
 # Copyright (C) 2013-2014, Andrew Leonard

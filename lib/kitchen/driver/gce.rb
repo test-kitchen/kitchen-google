@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # Author:: Andrew Leonard (<andy@hurricane-ridge.com>)
 # Author:: Chef Partner Engineering (<partnereng@chef.io>)
 #
@@ -424,11 +422,7 @@ module Kitchen
       end
 
       def generate_server_name
-        name = if config[:inst_name]
-                 config[:inst_name]
-               else
-                 "tk-#{instance.name.downcase}-#{SecureRandom.hex(3)}"
-               end
+        name = config[:inst_name] || "tk-#{instance.name.downcase}-#{SecureRandom.hex(3)}"
 
         if name.length > 63
           warn("The TK instance name (#{instance.name}) has been removed from the GCE instance name due to size limitations. Consider setting shorter platform or suite names.")

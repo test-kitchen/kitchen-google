@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-$:.push File.expand_path("../lib", __FILE__)
+$:.push File.expand_path('lib', __dir__)
 require "kitchen/driver/gce_version"
 
 Gem::Specification.new do |s|
