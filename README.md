@@ -215,7 +215,9 @@ GCE instance type (size) to launch; default: `n1-standard-1`
 
 ### `network`
 
-GCE network that instance will be attached to; default: `default`
+GCE network that instance will be attached to; default: `default`.
+
+**Windows instances.** The default network does not permit WinRM connections. You'll need to specify a network that allows WinRM so that Test Kitchen can connect to these instances.
 
 ### `network_project`
 
