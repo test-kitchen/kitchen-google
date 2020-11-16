@@ -298,7 +298,7 @@ driver:
       disk_size: 30
     disk2:
       disk_size: 50
-      iamge_name: custom_image # optionally, non-boot disks can also be based from an image instead of blank
+      image_name: custom_image # optionally, non-boot disks can also be based from an image instead of blank
 ```
 
 In the above example the `disk0` would be automatically be used as the bootdisk (/dev/sda), `disk1` would be mounted as /dev/sdb and be 30 gigabytes in size. `disk2` would be mounted as /dev/sdc and 50 gigabytes in size. Any of these disks could be the bootdisk (see below), but since none is specified, disk0 is automatically elected. Note that if `disk1` would be set as bootdisk using `boot: true` it will be mounted as /dev/sda.
