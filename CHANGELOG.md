@@ -1,3 +1,9 @@
+## [v2.1.0](https://github.com/test-kitchen/kitchen-google/tree/v2.1.0)
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.0.3...v2.1.0)
+
+- Add new `network_ip` config: An IPv4 internal IP address to assign to the instance. If not specified, an unused internal IP is automatically assigned. Thanks [@eReGeBe](https://github.com/eReGeBe) for this new feature!
+
 ## [v2.0.3](https://github.com/test-kitchen/kitchen-google/tree/v2.0.2)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.0.2...v2.0.3)

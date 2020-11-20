@@ -1,6 +1,6 @@
 #
 # Author:: Chef Partner Engineering (<partnereng@chef.io>)
-# Copyright:: Copyright (c) 2015-2020 Chef Software, Inc.
+# Copyright:: Copyright (c) Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,6 @@
 
 module Kitchen
   module Driver
-    GCE_VERSION = "2.0.3".freeze
+    GCE_VERSION = "2.1.0".freeze
   end
 end
