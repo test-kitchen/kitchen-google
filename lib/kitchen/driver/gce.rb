@@ -62,6 +62,7 @@ module Kitchen
 
       default_config :machine_type, "n1-standard-1"
       default_config :network, "default"
+      default_config :network_ip, nil
       default_config :network_project, nil
       default_config :subnet, nil
       default_config :subnet_project, nil
@@ -361,6 +362,10 @@ module Kitchen
         config[:network_project].nil? ? project : config[:network_project]
       end
 
+      def network_ip
+        config[:network_ip]
+      end
+
       def region
         config[:region].nil? ? region_for_zone : config[:region]
       end
@@ -571,6 +576,7 @@ module Kitchen
       def instance_network_interfaces
         interface                = Google::Apis::ComputeV1::NetworkInterface.new
         interface.network        = network_url if config[:subnet_project].nil?
+        interface.network_ip     = network_ip unless network_ip.nil?
         interface.subnetwork     = subnet_url if subnet_url
         interface.access_configs = interface_access_configs
 

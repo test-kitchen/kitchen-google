@@ -219,6 +219,11 @@ GCE network that instance will be attached to; default: `default`.
 
 **Windows instances.** The default network does not permit WinRM connections. You'll need to specify a network that allows WinRM so that Test Kitchen can connect to these instances.
 
+### `network_ip`
+
+An IPv4 internal IP address to assign to the instance. If not specified, an
+unused internal IP is automatically assigned.
+
 ### `network_project`
 
 GCE project which network belongs to; default is same as `project`

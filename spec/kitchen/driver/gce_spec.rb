@@ -951,6 +951,7 @@ describe Kitchen::Driver::Gce do
       allow(driver).to receive(:subnet_url)
       allow(driver).to receive(:interface_access_configs)
       allow(interface).to receive(:network=)
+      allow(interface).to receive(:network_ip=)
       allow(interface).to receive(:subnetwork=)
       allow(interface).to receive(:access_configs=)
     end
@@ -969,6 +970,18 @@ describe Kitchen::Driver::Gce do
     it "sets the access configs" do
       expect(driver).to receive(:interface_access_configs).and_return("access_configs")
       expect(interface).to receive(:access_configs=).with("access_configs")
+      driver.instance_network_interfaces
+    end
+
+    it "does not set a network ip by default" do
+      allow(driver).to receive(:network_ip).and_return(nil)
+      expect(interface).not_to receive(:network_ip=)
+      driver.instance_network_interfaces
+    end
+
+    it "sets a network ip if one was specified" do
+      allow(driver).to receive(:network_ip).and_return("10.142.0.2")
+      expect(interface).to receive(:network_ip=).with("10.142.0.2")
       driver.instance_network_interfaces
     end
 
