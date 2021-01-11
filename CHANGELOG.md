@@ -1,3 +1,10 @@
+## [v2.2.0](https://github.com/test-kitchen/kitchen-google/tree/v2.2.0)
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.1.0...v2.2.0)
+
+- Remove support for Ruby 2.3 since Google's API gems have long since dropped support for Ruby 2.3
+- Update the pin on the google-client-api gem to allow depsolving on Ruby 3.0
+
 ## [v2.1.0](https://github.com/test-kitchen/kitchen-google/tree/v2.1.0)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.0.3...v2.1.0)
