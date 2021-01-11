@@ -24,5 +24,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rspec"
   s.add_development_dependency "byebug"
 
-  s.required_ruby_version = ">= 2.3"
+  s.required_ruby_version = ">= 2.4"
 end
