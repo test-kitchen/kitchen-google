@@ -16,13 +16,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency "gcewinpass",        "~> 1.1"
   s.add_dependency "google-api-client", ">= 0.23.9", "<= 0.52.0"
-  s.add_dependency "test-kitchen"
+  s.add_dependency "test-kitchen",      ">= 1.4.1"
 
-  s.add_development_dependency "bundler"
-  s.add_development_dependency "pry"
-  s.add_development_dependency "rake"
-  s.add_development_dependency "rspec"
-  s.add_development_dependency "byebug"
-
-  s.required_ruby_version = ">= 2.4"
+  s.required_ruby_version = ">= 2.5"
 end
