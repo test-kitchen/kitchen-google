@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_dependency "gcewinpass",        "~> 1.1"
-  s.add_dependency "google-api-client", ">= 0.23.9", "<= 0.52.0"
+  s.add_dependency "google-api-client", ">= 0.23.9", "<= 0.54.0"
   s.add_dependency "test-kitchen",      ">= 1.4.1"
 
   s.required_ruby_version = ">= 2.5"
