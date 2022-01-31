@@ -34,7 +34,6 @@ gem "kitchen-google"
 
 ... and then run `bundle install`.
 
-
 ## Configuration
 
 See the [kitchen.ci Google Driver Page](https://kitchen.ci/docs/drivers/google/) for documentation on configuring this driver.
