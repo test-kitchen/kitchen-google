@@ -14,7 +14,7 @@ providers, GCE has a couple of advantages for Chef cookbook testing:
 
 ### Ruby Version
 
-Ruby 2.5 or greater.
+Ruby 2.6 or greater.
 
 ## Installation
 
