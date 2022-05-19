@@ -50,7 +50,7 @@ Source is hosted on [GitHub](https://github.com/test-kitchen/kitchen-google).
 
 * Report issues or submit feature requests on [GitHub](https://github.com/test-kitchen/kitchen-google/issues)
 
-## Author, Acknowledgements, Etc.
+## Author, Acknowledgements, Etc
 
 Created and maintained by [Andrew Leonard](http://andyleonard.com)
 ([andy@hurricane-ridge.com](mailto:andy@hurricane-ridge.com)).

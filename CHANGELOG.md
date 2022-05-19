@@ -1,3 +1,5 @@
+# Change Log
+
 ## [v2.2.0](https://github.com/test-kitchen/kitchen-google/tree/v2.2.0)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.1.0...v2.2.0)
@@ -35,11 +37,11 @@
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.5.0...v2.0.0)
 
- * #59: Add support for GCE instance labels
- * Require Ruby 2.3 or later
- * Reduced the number of files we ship in the Gem to reduce install size
- * Resolve minor Chefstyle warnings
- * Simplify and loosen dev deps
+- #59: Add support for GCE instance labels
+- Require Ruby 2.3 or later
+- Reduced the number of files we ship in the Gem to reduce install size
+- Resolve minor Chefstyle warnings
+- Simplify and loosen dev deps
 
 ## [v1.5.0](https://github.com/test-kitchen/kitchen-google/tree/v1.5.0)
 
@@ -55,6 +57,7 @@
 - Updated README [\#60](https://github.com/test-kitchen/kitchen-google/pull/60) ([jjasghar](https://github.com/jjasghar))
 
 ## [v1.4.0](https://github.com/test-kitchen/kitchen-google/tree/v1.4.0) (2017-09-28)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.3.0...v1.4.0)
 
 **Merged pull requests:**
@@ -63,6 +66,7 @@
 - Add support for Google Shared VPC Networks \(XPN\) [\#47](https://github.com/test-kitchen/kitchen-google/pull/47) ([zbikmarc](https://github.com/zbikmarc))
 
 ## [v1.3.0](https://github.com/test-kitchen/kitchen-google/tree/v1.3.0) (2017-09-15)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.2.0...v1.3.0)
 
 **Closed issues:**
@@ -86,6 +90,7 @@
 - Support configured custom metadata [\#43](https://github.com/test-kitchen/kitchen-google/pull/43) ([dldinternet](https://github.com/dldinternet))
 
 ## [v1.2.0](https://github.com/test-kitchen/kitchen-google/tree/v1.2.0) (2017-02-03)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.1.0...v1.2.0)
 
 **Closed issues:**
@@ -98,6 +103,7 @@
 - Support image\_family [\#44](https://github.com/test-kitchen/kitchen-google/pull/44) ([whiteley](https://github.com/whiteley))
 
 ## [v1.1.0](https://github.com/test-kitchen/kitchen-google/tree/v1.1.0) (2016-03-17)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v1.0.0...v1.1.0)
 
 **Merged pull requests:**
@@ -108,6 +114,7 @@
 - Rake and rubocop fixes [\#32](https://github.com/test-kitchen/kitchen-google/pull/32) ([adamleff](https://github.com/adamleff))
 
 ## [v1.0.0](https://github.com/test-kitchen/kitchen-google/tree/v1.0.0) (2016-03-10)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.3.0...v1.0.0)
 
 **Closed issues:**
@@ -119,6 +126,7 @@
 - Rewrite of kitchen-google to use google-api-client [\#30](https://github.com/test-kitchen/kitchen-google/pull/30) ([adamleff](https://github.com/adamleff))
 
 ## [v0.3.0](https://github.com/test-kitchen/kitchen-google/tree/v0.3.0) (2016-01-24)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.2.0...v0.3.0)
 
 **Closed issues:**
@@ -138,6 +146,7 @@
 - Support service\_accounts option in Fog [\#14](https://github.com/test-kitchen/kitchen-google/pull/14) ([jgoldschrafe](https://github.com/jgoldschrafe))
 
 ## [v0.2.0](https://github.com/test-kitchen/kitchen-google/tree/v0.2.0) (2014-09-20)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.1.2...v0.2.0)
 
 **Closed issues:**
@@ -150,6 +159,7 @@
 - Fix name length. [\#11](https://github.com/test-kitchen/kitchen-google/pull/11) ([pdunnavant](https://github.com/pdunnavant))
 
 ## [v0.1.2](https://github.com/test-kitchen/kitchen-google/tree/v0.1.2) (2014-04-16)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.1.0...v0.1.2)
 
 **Closed issues:**
@@ -157,6 +167,7 @@
 - Support Faraday 1.9 via ridley \>= 3.0.0 [\#9](https://github.com/test-kitchen/kitchen-google/issues/9)
 
 ## [v0.1.0](https://github.com/test-kitchen/kitchen-google/tree/v0.1.0) (2014-03-29)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v0.6.0...v0.1.0)
 
 **Closed issues:**
@@ -169,6 +180,7 @@
 - adding support for using authorized\_keys from a service account [\#7](https://github.com/test-kitchen/kitchen-google/pull/7) ([someara](https://github.com/someara))
 
 ## [v0.6.0](https://github.com/test-kitchen/kitchen-google/tree/v0.6.0) (2014-02-23)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/0.0.4...v0.6.0)
 
 **Closed issues:**
@@ -176,6 +188,7 @@
 - Network and Tag Support [\#5](https://github.com/test-kitchen/kitchen-google/issues/5)
 
 ## [0.0.4](https://github.com/test-kitchen/kitchen-google/tree/0.0.4) (2013-12-28)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/0.0.1...0.0.4)
 
 **Fixed bugs:**
@@ -189,6 +202,5 @@
 - Intermittent Kitchen::ActionFailed - eventually consistent GCE API? [\#3](https://github.com/test-kitchen/kitchen-google/issues/3)
 
 ## [0.0.1](https://github.com/test-kitchen/kitchen-google/tree/0.0.1) (2013-10-20)
-
 
 \* *This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)*
