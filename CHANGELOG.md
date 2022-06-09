@@ -1,5 +1,14 @@
 # Change Log
 
+## [v2.3.0](https://github.com/test-kitchen/kitchen-google/tree/v2.3.0)
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.2.0...v2.3.0)
+
+- Added support for Ruby 3.1 and ended support for Ruby 2.5 [@kasif-adnan](https://github.com/kasif-adnan)
+- Github workflow updates [@kasif-adnan](https://github.com/kasif-adnan)
+- Use chefsyle linting [@sanjain-progress](https://github.com/sanjain-progress)
+- Updated google-api-client and chefsyle
+
 ## [v2.2.0](https://github.com/test-kitchen/kitchen-google/tree/v2.2.0)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.1.0...v2.2.0)
