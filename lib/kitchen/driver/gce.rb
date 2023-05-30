@@ -552,13 +552,13 @@ module Kitchen
           guest_accelerator_obj = Google::Apis::ComputeV1::AcceleratorConfig.new
           guest_accelerator_obj.accelerator_type = "zones/#{zone}/acceleratorTypes/#{guest_accelerator[:type]}"
 
+          count = 1
+
           if guest_accelerator.has_key?(:count)
             count = guest_accelerator[:count]
-
-            if count > 0
-              guest_accelerator_obj.accelerator_count = count
-            end
           end
+
+          guest_accelerator_obj.accelerator_count = count
 
           guest_accelerator_configs << guest_accelerator_obj
         end
