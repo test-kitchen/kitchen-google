@@ -80,6 +80,7 @@ module Kitchen
       default_config :use_private_ip, false
       default_config :wait_time, 600
       default_config :refresh_rate, 2
+      default_config :guest_accelerators, []
       default_config :metadata, {}
       default_config :labels, {}
 
@@ -417,6 +418,7 @@ module Kitchen
         inst_obj.name               = server_name
         inst_obj.disks              = create_disks(server_name)
         inst_obj.machine_type       = machine_type_url
+        inst_obj.guest_accelerators = instance_guest_accelerators
         inst_obj.metadata           = instance_metadata
         inst_obj.network_interfaces = instance_network_interfaces
         inst_obj.scheduling         = instance_scheduling
@@ -535,6 +537,33 @@ module Kitchen
 
       def machine_type_url
         "zones/#{zone}/machineTypes/#{config[:machine_type]}"
+      end
+
+      def guest_accelerators
+        config[:guest_accelerators]
+      end
+
+      def instance_guest_accelerators
+        guest_accelerator_configs = []
+
+        guest_accelerators.each do |guest_accelerator|
+          next unless guest_accelerator.has_key?(:type)
+
+          guest_accelerator_obj = Google::Apis::ComputeV1::AcceleratorConfig.new
+          guest_accelerator_obj.accelerator_type = "zones/#{zone}/acceleratorTypes/#{guest_accelerator[:type]}"
+
+          if guest_accelerator.has_key?(:count)
+            count = guest_accelerator[:count]
+
+            if count > 0
+              guest_accelerator_obj.accelerator_count = count
+            end
+          end
+
+          guest_accelerator_configs << guest_accelerator_obj
+        end
+
+        guest_accelerator_configs
       end
 
       def metadata
