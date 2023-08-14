@@ -9,8 +9,8 @@ group :test do
 end
 
 group :debug do
-  gem "pry"
   gem "byebug"
+  gem "pry"
 end
 
 group :chefstyle do

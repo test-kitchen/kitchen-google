@@ -554,9 +554,7 @@ module Kitchen
 
           count = 1
 
-          if guest_accelerator.key?(:count)
-            count = guest_accelerator[:count]
-          end
+          count = guest_accelerator[:count] if guest_accelerator.key?(:count)
 
           guest_accelerator_obj.accelerator_count = count
 
