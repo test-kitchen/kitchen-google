@@ -1,7 +1,7 @@
 # Kitchen::Gce - A Test Kitchen Driver for Google Compute Engine
 
 [![Gem Version](https://badge.fury.io/rb/kitchen-google.svg)](https://badge.fury.io/rb/kitchen-google)
-![CI](https://github.com/test-kitchen/kitchen-google/workflows/CI/badge.svg?branch=master)
+[![CI](https://github.com/test-kitchen/kitchen-google/actions/workflows/linters.yml/badge.svg)](https://github.com/test-kitchen/kitchen-google/actions/workflows/linters.yml)
 
 This is a [Test Kitchen](https://github.com/test-kitchen/test-kitchen)
 driver for Google Compute Engine.  While similar to EC2 and other IaaS
