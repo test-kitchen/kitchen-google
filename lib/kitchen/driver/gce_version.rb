@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #
 # Author:: Chef Partner Engineering (<partnereng@chef.io>)
 # Copyright:: Copyright (c) Chef Software, Inc.
@@ -18,6 +20,6 @@
 
 module Kitchen
   module Driver
-    GCE_VERSION = "2.3.0".freeze
+    GCE_VERSION = "2.3.0"
   end
 end

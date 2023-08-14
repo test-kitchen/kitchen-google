@@ -735,7 +735,6 @@ describe Kitchen::Driver::Gce do
 
   describe "#create_disks" do
     it "sets up a boot disk if boot is present and returns it" do
-
       config = {
         disks: {
           disk1: {
@@ -879,13 +878,12 @@ describe Kitchen::Driver::Gce do
   end
 
   describe "#instance_metadata" do
-    let(:item1   ) { double("item1") }
-    let(:item2   ) { double("item2") }
-    let(:item3   ) { double("item3") }
+    let(:item1) { double("item1") }
+    let(:item2) { double("item2") }
+    let(:item3) { double("item3") }
     let(:metadata) { double("metadata") }
 
     it "returns a properly-configured metadata object" do
-
       expect(instance).to receive(:name).and_return("instance_name")
       expect(driver).to receive(:env_user).and_return("env_user")
       expect(Google::Apis::ComputeV1::Metadata).to receive(:new).and_return(metadata)
@@ -1129,15 +1127,18 @@ describe Kitchen::Driver::Gce do
     it "returns an array containing a properly-formatted service account" do
       service_account = double("service_account")
 
-      allow(driver).to receive(:config).and_return(service_account_name: "account_name", service_account_scopes: %w{scope1 scope2})
+      allow(driver).to receive(:config).and_return(service_account_name: "account_name",
+                                                   service_account_scopes: %w{
+                                                     scope1 scope2
+                                                   })
       expect(Google::Apis::ComputeV1::ServiceAccount).to receive(:new).and_return(service_account)
       expect(service_account).to receive(:email=).with("account_name")
       expect(driver).to receive(:service_account_scope_url).with("scope1").and_return("https://www.googleapis.com/auth/scope1")
       expect(driver).to receive(:service_account_scope_url).with("scope2").and_return("https://www.googleapis.com/auth/scope2")
       expect(service_account).to receive(:scopes=).with([
-        "https://www.googleapis.com/auth/scope1",
-        "https://www.googleapis.com/auth/scope2",
-      ])
+                                                          "https://www.googleapis.com/auth/scope1",
+                                                          "https://www.googleapis.com/auth/scope2",
+                                                        ])
 
       expect(driver.instance_service_accounts).to eq([service_account])
     end
