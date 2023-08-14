@@ -1,5 +1,12 @@
 # Change Log
 
+## [v2.4.0](https://github.com/test-kitchen/kitchen-google/tree/v2.4.0)
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.3.0...v2.4.0)
+
+- feat: add support for (optional) guest accelerator(s) configuration. Thanks [@estedev](https://github.com/estedev)!
+- Minor linting with the latest Rubocop
+
 ## [v2.3.0](https://github.com/test-kitchen/kitchen-google/tree/v2.3.0)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.2.0...v2.3.0)
