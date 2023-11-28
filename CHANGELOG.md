@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.5.0](https://github.com/test-kitchen/kitchen-google/compare/v2.4.0...v2.5.0) (2023-11-28)
+
+
+### Features
+
+* Add workflows ([#123](https://github.com/test-kitchen/kitchen-google/issues/123)) ([6799c10](https://github.com/test-kitchen/kitchen-google/commit/6799c10321b1f625d43cdc65b275ff9759aab0eb))
+
 ## [v2.4.0](https://github.com/test-kitchen/kitchen-google/tree/v2.4.0)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.3.0...v2.4.0)
