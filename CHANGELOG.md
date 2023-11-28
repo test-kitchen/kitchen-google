@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.6.0](https://github.com/test-kitchen/kitchen-google/compare/v2.5.0...v2.6.0) (2023-11-28)
+
+
+### Features
+
+* Update to use the google-apis-compute_v1 directly ([#120](https://github.com/test-kitchen/kitchen-google/issues/120)) ([471c04d](https://github.com/test-kitchen/kitchen-google/commit/471c04d71e4cf20a41c5d9fc97fb42e8cf64422b))
+
 ## [2.5.0](https://github.com/test-kitchen/kitchen-google/compare/v2.4.0...v2.5.0) (2023-11-28)
 
 
