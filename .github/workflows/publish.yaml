@@ -15,6 +15,7 @@ jobs:
           release-type: ruby
           package-name: kitchen-google
           version-file: lib/kitchen/driver/gce_version.rb
+          token: ${{ secrets.PORTER_GITHUB_TOKEN }}
 
       - name: Checkout
         uses: actions/checkout@v4
