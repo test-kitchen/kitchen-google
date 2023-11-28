@@ -84,7 +84,7 @@ module Kitchen
       default_config :metadata, {}
       default_config :labels, {}
 
-      DISK_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/.freeze
+      DISK_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/
 
       def name
         "Google Compute (GCE)"
@@ -272,11 +272,11 @@ module Kitchen
         info("Resetting the Windows password for user #{username} on #{server_name}...")
 
         state[:password] = GoogleComputeWindowsPassword.new(
-          project:       project,
-          zone:          zone,
+          project:,
+          zone:,
           instance_name: server_name,
           email:         config[:email],
-          username:      username
+          username:
         ).new_password
 
         info("Password reset complete on #{server_name} complete.")

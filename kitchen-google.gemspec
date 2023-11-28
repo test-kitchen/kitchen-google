@@ -6,8 +6,8 @@ Gem::Specification.new do |s|
   s.version     = Kitchen::Driver::GCE_VERSION
   s.summary     = "Kitchen::Driver::Gce"
   s.description = "A Test-Kitchen driver for Google Compute Engine"
-  s.authors     = ["Andrew Leonard", "Chef Partner Engineering"]
-  s.email       = ["andy@hurricane-ridge.com", "partnereng@chef.io"]
+  s.authors     = ["Test Kitchen Team"]
+  s.email       = ["help@sous-chefs.org"]
   s.homepage    = "https://github.com/test-kitchen/kitchen-google"
   s.license     = "Apache-2.0"
 
@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency "gcewinpass",        "~> 1.1"
   s.add_dependency "google-api-client", ">= 0.23.9", "<= 0.54.0"
-  s.add_dependency "test-kitchen",      ">= 1.4.1"
+  s.add_dependency "test-kitchen", ">= 1.0.0", "< 4.0"
 
-  s.required_ruby_version = ">= 2.7"
+  s.required_ruby_version = ">= 3.1"
 end
