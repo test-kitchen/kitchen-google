@@ -1,6 +1,5 @@
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in kitchen-google.gemspec
 gemspec
 
 group :test do
