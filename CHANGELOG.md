@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.6.1](https://github.com/test-kitchen/kitchen-google/compare/v2.6.0...v2.6.1) (2024-06-27)
+
+
+### Bug Fixes
+
+* release please configs ([#131](https://github.com/test-kitchen/kitchen-google/issues/131)) ([74062e2](https://github.com/test-kitchen/kitchen-google/commit/74062e2a143495fa3d066f3fbf1af4bf5e4bacef))
+
 ## [2.6.0](https://github.com/test-kitchen/kitchen-google/compare/v2.5.0...v2.6.0) (2023-11-28)
 
 
