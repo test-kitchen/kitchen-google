@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.6.2](https://github.com/test-kitchen/kitchen-google/compare/v2.6.1...v2.6.2) (2026-01-22)
+
+
+### Bug Fixes
+
+* bump tk dep to allow tk 4 ([#135](https://github.com/test-kitchen/kitchen-google/issues/135)) ([22ab837](https://github.com/test-kitchen/kitchen-google/commit/22ab837e354468c34e792c9c27f91768ca695c48))
+
 ## [2.6.1](https://github.com/test-kitchen/kitchen-google/compare/v2.6.0...v2.6.1) (2024-06-27)
 
 
