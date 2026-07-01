@@ -80,6 +80,7 @@ module Kitchen
       default_config :use_private_ip, false
       default_config :wait_time, 600
       default_config :refresh_rate, 2
+      default_config :winpass_timeout, nil
       default_config :guest_accelerators, []
       default_config :metadata, {}
       default_config :labels, {}
@@ -271,13 +272,15 @@ module Kitchen
 
         info("Resetting the Windows password for user #{username} on #{server_name}...")
 
-        state[:password] = GoogleComputeWindowsPassword.new(
-          project:,
-          zone:,
+        opts = {
+          project:       project,
+          zone:          zone,
           instance_name: server_name,
           email:         config[:email],
-          username:
-        ).new_password
+          username:      username,
+        }
+        opts[:timeout] = config[:winpass_timeout] unless config[:winpass_timeout].nil?
+        state[:password] = GoogleComputeWindowsPassword.new(**opts).new_password
 
         info("Password reset complete on #{server_name} complete.")
       end

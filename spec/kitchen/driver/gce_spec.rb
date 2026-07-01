@@ -395,12 +395,46 @@ describe Kitchen::Driver::Gce do
 
       allow(driver).to receive(:state).and_return(state)
       expect(transport).to receive(:config).and_return(username: "test_username")
-      expect(driver).to receive(:config).and_return(email: "test_email")
+      allow(driver).to receive(:config).and_return(email: "test_email", winpass_timeout: nil)
       expect(driver).to receive(:winrm_transport?).and_return(true)
       expect(GoogleComputeWindowsPassword).to receive(:new).with(winpass_config).and_return(winpass)
       expect(winpass).to receive(:new_password).and_return("password123")
       driver.update_windows_password("server_1")
       expect(state[:password]).to eq("password123")
+    end
+
+    it "passes the winpass_timeout config to gcewinpass when set" do
+      state   = {}
+      winpass = double("winpass")
+
+      allow(driver).to receive(:state).and_return(state)
+      expect(transport).to receive(:config).and_return(username: "test_username")
+      allow(driver).to receive(:config).and_return(email: "test_email", winpass_timeout: 300)
+      expect(driver).to receive(:winrm_transport?).and_return(true)
+      expect(GoogleComputeWindowsPassword).to receive(:new).with(
+        hash_including(timeout: 300)
+      ).and_return(winpass)
+      expect(winpass).to receive(:new_password).and_return("password123")
+      driver.update_windows_password("server_1")
+    end
+
+    it "does not pass timeout when winpass_timeout is not set in config" do
+      state   = {}
+      winpass = double("winpass")
+
+      allow(driver).to receive(:state).and_return(state)
+      expect(transport).to receive(:config).and_return(username: "test_username")
+      allow(driver).to receive(:config).and_return(email: "test_email", winpass_timeout: nil)
+      expect(driver).to receive(:winrm_transport?).and_return(true)
+      expect(GoogleComputeWindowsPassword).to receive(:new).with(
+        hash_not_including(:timeout)
+      ).and_return(winpass)
+      expect(winpass).to receive(:new_password).and_return("password123")
+      driver.update_windows_password("server_1")
+    end
+
+    it "defaults winpass_timeout config to nil" do
+      expect(driver.send(:config)[:winpass_timeout]).to be_nil
     end
   end
 
