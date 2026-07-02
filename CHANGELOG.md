@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.7.0](https://github.com/test-kitchen/kitchen-google/compare/v2.6.2...v2.7.0) (2026-07-02)
+
+
+### Features
+
+* Add configurable winpass_timeout for Windows password reset and migrate Chefstyle to Cookstyle ([#139](https://github.com/test-kitchen/kitchen-google/issues/139)) ([b96059e](https://github.com/test-kitchen/kitchen-google/commit/b96059e292f305f6ebd4fc3eab45c620728c163b))
+
 ## [2.6.2](https://github.com/test-kitchen/kitchen-google/compare/v2.6.1...v2.6.2) (2026-01-22)
 
 
