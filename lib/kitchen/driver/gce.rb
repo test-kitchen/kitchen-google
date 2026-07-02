@@ -273,11 +273,11 @@ module Kitchen
         info("Resetting the Windows password for user #{username} on #{server_name}...")
 
         opts = {
-          project:       project,
-          zone:          zone,
+          project: project,
+          zone: zone,
           instance_name: server_name,
-          email:         config[:email],
-          username:      username,
+          email: config[:email],
+          username: username,
         }
         opts[:timeout] = config[:winpass_timeout] unless config[:winpass_timeout].nil?
         state[:password] = GoogleComputeWindowsPassword.new(**opts).new_password
@@ -530,7 +530,7 @@ module Kitchen
       end
 
       def image_url(image = image_name)
-        return "projects/#{image_project}/global/images/#{image}" if image_exist?(image)
+        "projects/#{image_project}/global/images/#{image}" if image_exist?(image)
       end
 
       def image_name_for_family(image_family)
