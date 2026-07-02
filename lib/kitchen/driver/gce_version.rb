@@ -20,6 +20,6 @@
 
 module Kitchen
   module Driver
-    GCE_VERSION = "2.6.2"
+    GCE_VERSION = "2.7.0"
   end
 end
