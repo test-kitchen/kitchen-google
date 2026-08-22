@@ -73,14 +73,14 @@
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.0.2...v2.0.3)
 
-- Updating google-api-client depedency to allow for v0.36
+- Updating google-api-client dependency to allow for v0.36
 - Speed up how we require libraries
 
 ## [v2.0.2](https://github.com/test-kitchen/kitchen-google/tree/v2.0.2)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-google/compare/v2.0.1...v2.0.2)
 
-- Updating google-api-client depedency to allow for v0.34
+- Updating google-api-client dependency to allow for v0.34
 
 ## [v2.0.1](https://github.com/test-kitchen/kitchen-google/tree/v2.0.1)
 
