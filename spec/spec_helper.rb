@@ -1,8 +1,3 @@
-#
-# Author:: Andrew Leonard (<andy@hurricane-ridge.com>)
-#
-# Copyright (C) 2013-2014, Andrew Leonard
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -15,20 +10,44 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "rspec"
+require "kitchen/driver/gce"
+require "kitchen/transport/dummy"
 
-require_relative "../lib/kitchen/driver/gce"
+Dir[File.expand_path("support/**/*.rb", __dir__)].sort.each { |file| require file }
 
 RSpec.configure do |config|
-  # Run specs in random order to surface order dependencies. If you find an
-  # order dependency and want to debug it, you can fix the order by providing
-  # the seed, which is printed after each run.
-  #     --seed 1234
-  config.order = :random
+  config.expect_with :rspec do |expectations|
+    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
+    expectations.syntax = :expect
+  end
 
-  # Seed global randomization in this process using the `--seed` CLI option.
-  # Setting this allows you to use `--seed` to deterministically reproduce
-  # test failures related to randomization by passing the same `--seed` value
-  # as the one that triggered the failure.
+  config.mock_with :rspec do |mocks|
+    mocks.syntax = :expect
+
+    # Doubles standing in for a real class reject messages that class does not
+    # respond to, and check arity. This is what keeps the specs honest about
+    # the Google API surface.
+    mocks.verify_partial_doubles = true
+  end
+
+  # No `should`, no globally-exposed DSL: everything is namespaced under RSpec.
+  config.disable_monkey_patching!
+
+  # A deprecation is a bug we have not noticed yet.
+  config.raise_errors_for_deprecations!
+
+  # One example may report several independent failures instead of stopping at
+  # the first, which matters when asserting over a built API payload.
+  config.define_derived_metadata { |meta| meta[:aggregate_failures] = true }
+
+  config.filter_run_when_matching :focus
+  config.example_status_persistence_file_path = "spec/examples.txt"
+  config.shared_context_metadata_behavior = :apply_to_host_groups
+  config.warnings = false
+
+  config.default_formatter = "doc" if config.files_to_run.one?
+
+  # Surface order dependencies; reproduce a failure with `--seed`.
+  config.order = :random
   Kernel.srand config.seed
 end

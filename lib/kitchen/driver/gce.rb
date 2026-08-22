@@ -21,15 +21,32 @@ require "google/apis/compute_v1"
 require "kitchen"
 require_relative "gce_version"
 require "securerandom" unless defined?(SecureRandom)
+require "timeout" unless defined?(Timeout)
 
 module Kitchen
   module Driver
-    # Google Compute Engine driver for Test Kitchen
+    # Google Compute Engine driver for Test Kitchen.
+    #
+    # Creates and destroys GCE instances for Test Kitchen suites, translating
+    # `kitchen.yml` driver configuration into Google Compute Engine API calls.
     #
     # @author Andrew Leonard <andy@hurricane-ridge.com>
+    #
+    # @example Minimal kitchen.yml configuration
+    #   driver:
+    #     name: gce
+    #     project: my-gcp-project
+    #     zone: us-central1-a
+    #     image_family: ubuntu-2204-lts
+    #     image_project: ubuntu-os-cloud
     class Gce < Kitchen::Driver::Base
+      # @return [Hash] the Test Kitchen state hash for the action in progress
       attr_accessor :state
 
+      # Maps the short scope aliases accepted by `gcloud` onto the scope
+      # segment of their fully-qualified OAuth 2.0 URL.
+      #
+      # @return [Hash{String => String}] alias to scope-path mapping
       SCOPE_ALIAS_MAP = {
         "bigquery" => "bigquery",
         "cloud-platform" => "cloud-platform",
@@ -85,12 +102,55 @@ module Kitchen
       default_config :metadata, {}
       default_config :labels, {}
 
+      # Pattern a GCE disk name must match in full.
+      #
+      # @return [Regexp] the permitted disk-name pattern
       DISK_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/
 
+      # Longest instance name GCE accepts.
+      #
+      # @return [Integer] the maximum instance-name length
+      MAX_INSTANCE_NAME_LENGTH = 63
+
+      # Fixed size, in gigabytes, of every GCE local SSD.
+      #
+      # @see https://cloud.google.com/compute/docs/disks/#localssds
+      # @return [Integer] the local SSD size
+      LOCAL_SSD_SIZE_GB = 375
+
+      # Disk type identifying a local SSD rather than a persistent disk.
+      #
+      # @return [String] the local SSD disk type
+      LOCAL_SSD_TYPE = "local-ssd".freeze
+
+      # Configuration applied to every disk before the user's own settings.
+      #
+      # @return [Hash] the per-disk defaults
+      DISK_DEFAULT_CONFIG = {
+        autodelete_disk: true,
+        disk_size: 10,
+        disk_type: "pd-standard",
+      }.freeze
+
+      # Human-readable driver name shown in Test Kitchen output.
+      #
+      # @return [String] the driver's display name
       def name
         "Google Compute (GCE)"
       end
 
+      # Creates a GCE instance for the Test Kitchen suite and waits until its
+      # transport is reachable.
+      #
+      # Returns immediately if the state file already records a server, making
+      # the action idempotent. If any step fails, the partially-created
+      # instance and any standalone disks created along the way are torn down
+      # before the error is re-raised.
+      #
+      # @param state [Hash] the Test Kitchen state hash, mutated in place with
+      #   `:server_name`, `:hostname` and `:zone`
+      # @return [void]
+      # @raise [StandardError] if instance creation fails for any reason
       def create(state)
         @state = state
         return if state[:server_name]
@@ -121,10 +181,24 @@ module Kitchen
         info("GCE instance <#{server_name}> created and ready.")
       rescue => e
         error("Error encountered during server creation: #{e.class}: #{e.message}")
-        destroy(state)
+        begin
+          # The instance must go first: its disks cannot be deleted while it
+          # still holds them.
+          destroy(state)
+        ensure
+          delete_created_disks
+        end
         raise
       end
 
+      # Destroys the GCE instance recorded in the state file.
+      #
+      # Does nothing when the state file records no server, or when the
+      # instance no longer exists in GCE.
+      #
+      # @param state [Hash] the Test Kitchen state hash, mutated in place to
+      #   remove `:server_name`, `:hostname` and `:zone`
+      # @return [void]
       def destroy(state)
         @state      = state
         server_name = state[:server_name]
@@ -144,78 +218,162 @@ module Kitchen
         state.delete(:zone)
       end
 
+      # Whether the deprecated single-boot-disk options are configured.
+      #
+      # @return [Boolean] true if any of `autodelete_disk`, `disk_size` or
+      #   `disk_type` is set
       def old_disk_configuration_present?
         !config[:autodelete_disk].nil? || !config[:disk_size].nil? || !config[:disk_type].nil?
       end
 
+      # Whether the multi-disk `disks` option is configured.
+      #
+      # @return [Boolean] true if `disks` is set
       def new_disk_configuration_present?
         !config[:disks].nil?
       end
 
+      # Normalises whichever disk configuration style the user supplied into
+      # the canonical `disks` hash the rest of the driver consumes.
+      #
+      # Deprecated single-disk options are converted to a one-entry `disks`
+      # hash; an explicit `disks` hash has defaults applied, is validated, and
+      # has a boot disk chosen when none was flagged. When neither is present a
+      # single default boot disk is configured.
+      #
+      # @return [Hash{Symbol => Hash}] the normalised disk configuration, also
+      #   written back to `config[:disks]`
+      # @raise [RuntimeError] if a disk name, disk type or boot-disk
+      #   arrangement is invalid
       def create_disks_config
-        # This can't be present in default_config because we couldn't
-        # determine which disk configuration the user used otherwise
-        disk_default_config = {
-          autodelete_disk: true,
-          disk_size: 10,
-          disk_type: "pd-standard",
-        }
-
-        if old_disk_configuration_present?
-          # If the old disk configuration is used,
-          # we'll convert it to the new one
-          config[:disks] = {
-            disk1: {
-              boot: true,
-              autodelete_disk: config.fetch(:autodelete_disk, disk_default_config[:autodelete_disk]),
-              disk_size: config.fetch(:disk_size, disk_default_config[:disk_size]),
-              disk_type: config.fetch(:disk_type, disk_default_config[:disk_type]),
-            },
-          }
-          raise "Disk type #{config[:disks][:disk1][:disk_type]} is not valid" unless valid_disk_type?(config[:disks][:disk1][:disk_type])
-        elsif new_disk_configuration_present?
-          # If the new disk configuration is present, ensure that for
-          # every disk the needed configuration is set
-          boot_disk_counter = 0
-          config[:disks].each do |disk_name, disk_config|
-            # te&/ => te
-            raise "Disk name invalid. Must match #{DISK_NAME_REGEX}." unless valid_disk_name?(disk_name)
-
-            # Update the config for the disk with the fixed config
-            config[:disks][disk_name.to_sym] = disk_default_config.merge(disk_config)
-
-            # Since the config was altered, we can't use disk_config (as it will be different or keys will not be present)
-            raise "Disk type #{config[:disks][disk_name.to_sym][:disk_type]} for disk #{disk_name} is not valid" unless valid_disk_type?(config[:disks][disk_name.to_sym][:disk_type])
-
-            unless disk_config[:boot].nil?
-              boot_disk_counter += 1
-              raise "Boot disk cannot be local SSD." if disk_config[:disk_type] == "local-ssd"
-            end
-
-            if disk_config[:disk_type] == "local-ssd"
-              raise "#{disk_name}: Cannot use 'disk_size' with local SSD. They always have 375 GB (https://cloud.google.com/compute/docs/disks/#localssds)." unless disk_config[:disk_size].nil?
-
-              # Since disk_size is set to 10 in default_config, it needs to be adjusted for local SSDs
-              config[:disks][disk_name.to_sym][:disk_size] = nil
-            end
+        # These defaults cannot live in default_config: their absence is what
+        # tells us which of the two configuration styles the user chose.
+        config[:disks] =
+          if old_disk_configuration_present?
+            { disk1: legacy_disk_config }
+          elsif new_disk_configuration_present?
+            normalize_disks(config[:disks])
+          else
+            { disk1: DISK_DEFAULT_CONFIG.merge(boot: true) }
           end
-          if boot_disk_counter == 0
-            first_disk = config[:disks].first[0]
-            first_config = config[:disks].first[1]
-            config[:disks][first_disk] = first_config.merge({ boot: true })
-            warn("No bootdisk found - Assuming first disk will be boot disk")
-          elsif boot_disk_counter > 1
-            raise "More than one boot disk specified"
-          end
-        elsif !new_disk_configuration_present?
-          # If no new disk configuration is present,
-          # we'll set up the default configuration for the new style
-          config[:disks] = {
-            "disk1": disk_default_config.merge({ boot: true }),
-          }
-        end
       end
 
+      # Builds the single boot disk described by the deprecated
+      # `autodelete_disk`, `disk_size` and `disk_type` options.
+      #
+      # @return [Hash] the normalised boot disk configuration
+      # @raise [RuntimeError] if the configured disk type is not valid
+      # @api private
+      def legacy_disk_config
+        disk_config = {
+          boot: true,
+          autodelete_disk: config.fetch(:autodelete_disk, DISK_DEFAULT_CONFIG[:autodelete_disk]),
+          disk_size: config.fetch(:disk_size, DISK_DEFAULT_CONFIG[:disk_size]),
+          disk_type: config.fetch(:disk_type, DISK_DEFAULT_CONFIG[:disk_type]),
+        }
+
+        raise "Disk type #{disk_config[:disk_type]} is not valid" unless valid_disk_type?(disk_config[:disk_type])
+
+        disk_config
+      end
+
+      # Applies defaults to and validates every entry of a user-supplied
+      # `disks` hash, then ensures exactly one disk is marked bootable.
+      #
+      # Builds a new hash rather than mutating the one being iterated, so that
+      # string keys from `kitchen.yml` can be symbolised safely.
+      #
+      # @param disks [Hash] the raw `disks` configuration, keyed by disk name
+      # @return [Hash{Symbol => Hash}] the normalised disk configuration
+      # @raise [RuntimeError] if a disk name or type is invalid, or more than
+      #   one boot disk is specified
+      # @api private
+      def normalize_disks(disks)
+        normalized = disks.each_with_object({}) do |(disk_name, disk_config), memo|
+          raise "Disk name invalid. Must match #{DISK_NAME_REGEX}." unless valid_disk_name?(disk_name)
+
+          memo[disk_name.to_sym] = normalize_disk(disk_name, disk_config)
+        end
+
+        assign_boot_disk(normalized)
+      end
+
+      # Applies the disk defaults to one disk entry and validates the result.
+      #
+      # @param disk_name [String, Symbol] the disk's name, used in error messages
+      # @param disk_config [Hash] the user-supplied configuration for this disk
+      # @return [Hash] the disk configuration with defaults applied
+      # @raise [RuntimeError] if the disk type is invalid, a local SSD is
+      #   marked bootable, or a size is given for a local SSD
+      # @api private
+      def normalize_disk(disk_name, disk_config)
+        normalized = DISK_DEFAULT_CONFIG.merge(disk_config)
+
+        unless valid_disk_type?(normalized[:disk_type])
+          raise "Disk type #{normalized[:disk_type]} for disk #{disk_name} is not valid"
+        end
+
+        return normalized unless local_ssd?(normalized)
+
+        raise "Boot disk cannot be local SSD." if normalized[:boot]
+
+        unless disk_config[:disk_size].nil?
+          raise "#{disk_name}: Cannot use 'disk_size' with local SSD. They always have " \
+                "#{LOCAL_SSD_SIZE_GB} GB (https://cloud.google.com/compute/docs/disks/#localssds)."
+        end
+
+        # disk_size defaults to 10 above, which must not be sent for a local SSD.
+        normalized.merge(disk_size: nil)
+      end
+
+      # Ensures exactly one disk in the set is marked as the boot disk,
+      # promoting the first eligible disk when the user flagged none.
+      #
+      # A disk is eligible unless it is a local SSD, which cannot boot, or the
+      # user explicitly set `boot: false` on it.
+      #
+      # @param disks [Hash{Symbol => Hash}] the normalised disk configuration
+      # @return [Hash{Symbol => Hash}] the configuration with one boot disk
+      # @raise [RuntimeError] if more than one boot disk is specified, no disks
+      #   were given, or no disk is eligible to boot
+      # @api private
+      def assign_boot_disk(disks)
+        boot_disks = disks.select { |_disk_name, disk_config| disk_config[:boot] }
+
+        raise "More than one boot disk specified" if boot_disks.size > 1
+        return disks unless boot_disks.empty?
+
+        raise "No disks specified" if disks.empty?
+
+        bootable = disks.find do |_disk_name, disk_config|
+          !local_ssd?(disk_config) && disk_config[:boot] != false
+        end
+
+        if bootable.nil?
+          raise "No boot disk specified, and no disk is eligible to become one. " \
+                "Local SSDs cannot boot, and disks set to 'boot: false' are excluded."
+        end
+
+        disk_name = bootable.first
+        warn("No bootdisk found - Assuming #{disk_name} will be boot disk")
+        disks.merge(disk_name => disks[disk_name].merge(boot: true))
+      end
+
+      # Whether a disk configuration describes a local SSD.
+      #
+      # @param disk_config [Hash] a disk configuration
+      # @return [Boolean] true if the disk type is `local-ssd`
+      # @api private
+      def local_ssd?(disk_config)
+        disk_config[:disk_type] == LOCAL_SSD_TYPE
+      end
+
+      # Validates the driver configuration against the GCE API, raising on the
+      # first problem found and warning about ambiguous or deprecated settings.
+      #
+      # @return [void]
+      # @raise [RuntimeError] if any configured project, zone, region, machine
+      #   type, network, subnet, image or disk setting is invalid
       def validate!
         raise "Project #{config[:project]} is not a valid project" unless valid_project?
         raise "Either zone or region must be specified" unless config[:zone] || config[:region]
@@ -239,6 +397,9 @@ module Kitchen
         warn("These configs are deprecated - consider using new disks configuration") if old_disk_configuration_present?
       end
 
+      # Memoised, authorised Compute Engine API client.
+      #
+      # @return [Google::Apis::ComputeV1::ComputeService] the API client
       def connection
         return @connection unless @connection.nil?
 
@@ -252,6 +413,9 @@ module Kitchen
         @connection
       end
 
+      # Application default credentials scoped for Compute Engine.
+      #
+      # @return [Google::Auth::Credentials] the resolved credentials
       def authorization
         @authorization ||= Google::Auth.get_application_default(
           [
@@ -261,10 +425,18 @@ module Kitchen
         )
       end
 
+      # Whether the suite's transport is WinRM, implying a Windows guest.
+      #
+      # @return [Boolean] true when the transport is WinRM
       def winrm_transport?
         instance.transport.name.casecmp("winrm") == 0
       end
 
+      # Resets the Windows password for the transport's user and stores it in
+      # the state file. A no-op for non-WinRM transports.
+      #
+      # @param server_name [String] the GCE instance name
+      # @return [void]
       def update_windows_password(server_name)
         return unless winrm_transport?
 
@@ -282,9 +454,14 @@ module Kitchen
         opts[:timeout] = config[:winpass_timeout] unless config[:winpass_timeout].nil?
         state[:password] = GoogleComputeWindowsPassword.new(**opts).new_password
 
-        info("Password reset complete on #{server_name} complete.")
+        info("Password reset complete on #{server_name}.")
       end
 
+      # Runs an API call and reports whether it succeeded, swallowing client
+      # errors so callers can use it as a validity predicate.
+      #
+      # @yield the API call to attempt
+      # @return [Boolean] true if the call succeeded, false on a client error
       def check_api_call(&block)
         yield
       rescue Google::Apis::ClientError => e
@@ -294,94 +471,161 @@ module Kitchen
         true
       end
 
+      # Whether the configured project exists and is reachable.
+      #
+      # @return [Boolean] true if the project is valid
       def valid_project?
         check_api_call { connection.get_project(project) }
       end
 
+      # Whether the configured machine type exists in the target zone.
+      #
+      # @return [Boolean] true if the machine type is valid
       def valid_machine_type?
         return false if config[:machine_type].nil?
 
         check_api_call { connection.get_machine_type(project, zone, config[:machine_type]) }
       end
 
+      # Whether the configured network exists in the network project.
+      #
+      # @return [Boolean] true if the network is valid
       def valid_network?
         return false if config[:network].nil?
 
         check_api_call { connection.get_network(network_project, config[:network]) }
       end
 
+      # Whether the configured subnet exists in the subnet project and region.
+      #
+      # @return [Boolean] true if the subnet is valid
       def valid_subnet?
         return false if config[:subnet].nil?
 
         check_api_call { connection.get_subnetwork(subnet_project, region, config[:subnet]) }
       end
 
+      # Whether the configured zone exists in the project.
+      #
+      # @return [Boolean] true if the zone is valid
       def valid_zone?
         return false if config[:zone].nil?
 
         check_api_call { connection.get_zone(project, config[:zone]) }
       end
 
+      # Whether the configured region exists in the project.
+      #
+      # @return [Boolean] true if the region is valid
       def valid_region?
         return false if config[:region].nil?
 
         check_api_call { connection.get_region(project, config[:region]) }
       end
 
+      # Whether a disk type exists in the target zone.
+      #
+      # @param disk_type [String, nil] the disk type to check
+      # @return [Boolean] true if the disk type is valid
       def valid_disk_type?(disk_type)
         return false if disk_type.nil?
 
         check_api_call { connection.get_disk_type(project, zone, disk_type) }
       end
 
+      # Whether a disk name matches {DISK_NAME_REGEX} in full.
+      #
+      # @param disk_name [String, Symbol] the disk name to check
+      # @return [Boolean] true if the whole name matches the pattern
       def valid_disk_name?(disk_name)
-        disk_name.to_s.match(DISK_NAME_REGEX).to_s.length == disk_name.length
+        disk_name.to_s.match?(/\A#{DISK_NAME_REGEX}\z/)
       end
 
+      # Whether an image exists in the image project.
+      #
+      # @param image [String] the image name, defaulting to the configured one
+      # @return [Boolean] true if the image exists
       def image_exist?(image = image_name)
         check_api_call { connection.get_image(image_project, image) }
       end
 
+      # Whether a GCE instance exists in the target project and zone.
+      #
+      # @param server_name [String] the instance name
+      # @return [Boolean] true if the instance exists
       def server_exist?(server_name)
         check_api_call { server_instance(server_name) }
       end
 
+      # The configured GCP project.
+      #
+      # @return [String] the project ID
       def project
         config[:project]
       end
 
+      # Name of the boot image, resolved from the image family when only a
+      # family was configured.
+      #
+      # @return [String] the image name
       def image_name
         @image_name ||= config[:image_name] || image_name_for_family(config[:image_family])
       end
 
+      # Project searched for images, defaulting to the instance's own project.
+      #
+      # @return [String] the image project ID
       def image_project
         config[:image_project].nil? ? project : config[:image_project]
       end
 
+      # Project searched for subnets, defaulting to the instance's own project.
+      #
+      # @return [String] the subnet project ID
       def subnet_project
         config[:subnet_project].nil? ? project : config[:subnet_project]
       end
 
+      # Project searched for networks, defaulting to the instance's own project.
+      #
+      # @return [String] the network project ID
       def network_project
         config[:network_project].nil? ? project : config[:network_project]
       end
 
+      # The static internal IP to assign, if one was configured.
+      #
+      # @return [String, nil] the internal IP address
       def network_ip
         config[:network_ip]
       end
 
+      # The target region, derived from the zone when not configured directly.
+      #
+      # @return [String] the region name
       def region
         config[:region].nil? ? region_for_zone : config[:region]
       end
 
+      # Looks up which region the target zone belongs to.
+      #
+      # @return [String] the region name
       def region_for_zone
         @region_for_zone ||= connection.get_zone(project, zone).region.split("/").last
       end
 
+      # The target zone, taken from the state file or configuration, or chosen
+      # at random from the configured region.
+      #
+      # @return [String] the zone name
       def zone
         @zone ||= state[:zone] || config[:zone] || find_zone
       end
 
+      # Picks a random zone that is up in the configured region.
+      #
+      # @return [String] the chosen zone name
+      # @raise [RuntimeError] if no zone in the region is available
       def find_zone
         zone = zones_in_region.sample
         raise "Unable to find a suitable zone in #{region}" if zone.nil?
@@ -389,6 +633,9 @@ module Kitchen
         zone.name
       end
 
+      # All zones in the configured region whose status is `UP`.
+      #
+      # @return [Array<Google::Apis::ComputeV1::Zone>] the available zones
       def zones_in_region
         connection.list_zones(project).items.select do |zone|
           zone.status == "UP" &&
@@ -396,26 +643,49 @@ module Kitchen
         end
       end
 
+      # Fetches a GCE instance.
+      #
+      # @param server_name [String] the instance name
+      # @return [Google::Apis::ComputeV1::Instance] the instance
       def server_instance(server_name)
         connection.get_instance(project, zone, server_name)
       end
 
+      # The IP address Test Kitchen should connect to, honouring
+      # `use_private_ip`.
+      #
+      # @param server [Google::Apis::ComputeV1::Instance] the instance
+      # @return [String] the IP address
       def ip_address_for(server)
         config[:use_private_ip] ? private_ip_for(server) : public_ip_for(server)
       end
 
+      # The instance's internal IP address.
+      #
+      # @param server [Google::Apis::ComputeV1::Instance] the instance
+      # @return [String] the private IP address
+      # @raise [RuntimeError] if the instance has no network interface
       def private_ip_for(server)
         server.network_interfaces.first.network_ip
       rescue NoMethodError
         raise "Unable to determine private IP for instance"
       end
 
+      # The instance's external NAT IP address.
+      #
+      # @param server [Google::Apis::ComputeV1::Instance] the instance
+      # @return [String] the public IP address
+      # @raise [RuntimeError] if the instance has no external access config
       def public_ip_for(server)
         server.network_interfaces.first.access_configs.first.nat_ip
       rescue NoMethodError
         raise "Unable to determine public IP for instance"
       end
 
+      # Assembles the full instance definition sent to the GCE API.
+      #
+      # @param server_name [String] the instance name
+      # @return [Google::Apis::ComputeV1::Instance] the instance to create
       def create_instance_object(server_name)
         inst_obj                    = Google::Apis::ComputeV1::Instance.new
         inst_obj.name               = server_name
@@ -432,10 +702,14 @@ module Kitchen
         inst_obj
       end
 
+      # Builds a unique, GCE-legal instance name, falling back to a UUID when
+      # the Test Kitchen instance name would make it too long.
+      #
+      # @return [String] the instance name
       def generate_server_name
         name = config[:inst_name] || "tk-#{instance.name.downcase}-#{SecureRandom.hex(3)}"
 
-        if name.length > 63
+        if name.length > MAX_INSTANCE_NAME_LENGTH
           warn("The TK instance name (#{instance.name}) has been removed from the GCE instance name due to size limitations. Consider setting shorter platform or suite names.")
           name = "tk-#{SecureRandom.uuid}"
         end
@@ -443,6 +717,11 @@ module Kitchen
         name.gsub(/([^-a-z0-9])/, "-")
       end
 
+      # Builds every disk for the instance, creating standalone persistent
+      # disks up front where required. The boot disk is always listed first.
+      #
+      # @param server_name [String] the instance name, used to derive disk names
+      # @return [Array<Google::Apis::ComputeV1::AttachedDisk>] the disks
       def create_disks(server_name)
         disks = []
         config[:disks].each do |disk_name, disk_config|
@@ -450,7 +729,7 @@ module Kitchen
           if disk_config[:boot]
             disk = create_local_disk(unique_disk_name, disk_config)
             disks.unshift(disk)
-          elsif (disk_config[:disk_type] == "local-ssd") || disk_config[:custom_image]
+          elsif local_ssd?(disk_config) || disk_config[:custom_image]
             disk = create_local_disk(unique_disk_name, disk_config)
             disks.push(disk)
           else
@@ -461,32 +740,43 @@ module Kitchen
         disks
       end
 
+      # Builds a disk created inline with the instance, from either the boot
+      # image, a custom image, or as local SSD scratch space.
+      #
+      # @param unique_disk_name [String] the disk's name
+      # @param disk_config [Hash] the normalised disk configuration
+      # @return [Google::Apis::ComputeV1::AttachedDisk] the disk
       def create_local_disk(unique_disk_name, disk_config)
         disk   = Google::Apis::ComputeV1::AttachedDisk.new
         # Specifies the parameters for a new disk that will be created alongside the new instance.
         params = Google::Apis::ComputeV1::AttachedDiskInitializeParams.new
-        disk.boot           = true if !disk_config[:boot].nil? && disk_config[:boot].to_s == "true"
+        disk.boot           = true if disk_config[:boot]
         disk.auto_delete    = disk_config[:autodelete_disk]
         params.disk_size_gb = disk_config[:disk_size]
         params.disk_type    = disk_type_url_for(disk_config[:disk_type])
 
-        if disk_config[:disk_type] == "local-ssd"
-          info("Creating a 375 GB local ssd as scratch disk (https://cloud.google.com/compute/docs/disks/#localssds).")
+        if local_ssd?(disk_config)
+          info("Creating a #{LOCAL_SSD_SIZE_GB} GB local ssd as scratch disk (https://cloud.google.com/compute/docs/disks/#localssds).")
           disk.type = "SCRATCH"
         elsif disk.boot
           info("Creating a #{disk_config[:disk_size]} GB boot disk named #{unique_disk_name} from image #{image_name}...")
-          params.source_image = boot_disk_source_image unless disk_config[:disk_type] == "local-ssd"
-          params.disk_name    = unique_disk_name unless disk_config[:disk_type] == "local-ssd"
+          params.source_image = boot_disk_source_image
+          params.disk_name    = unique_disk_name
         else
           info("Creating a #{disk_config[:disk_size]} GB extra disk named #{unique_disk_name} from image #{disk_config[:custom_image]}...")
-          params.source_image = image_url(disk_config[:custom_image]) unless disk_config[:disk_type] == "local-ssd"
-          params.disk_name    = unique_disk_name unless disk_config[:disk_type] == "local-ssd"
-
+          params.source_image = image_url(disk_config[:custom_image])
+          params.disk_name    = unique_disk_name
         end
         disk.initialize_params = params
         disk
       end
 
+      # Creates a standalone persistent disk, waits for it to become ready, and
+      # returns a reference attaching it to the instance.
+      #
+      # @param unique_disk_name [String] the disk's name
+      # @param disk_config [Hash] the normalised disk configuration
+      # @return [Google::Apis::ComputeV1::AttachedDisk] the attachment
       def create_attached_disk(unique_disk_name, disk_config)
         disk = Google::Apis::ComputeV1::Disk.new
         disk.name    = unique_disk_name
@@ -495,6 +785,7 @@ module Kitchen
 
         info("Creating a #{disk_config[:disk_size]} GB disk named #{unique_disk_name}...")
         wait_for_operation(connection.insert_disk(project, zone, disk))
+        created_disk_names << unique_disk_name
         info("Waiting for disk to be ready...")
         wait_for_status("READY") { connection.get_disk(project, zone, unique_disk_name) }
         info("Disk created successfully.")
@@ -504,6 +795,28 @@ module Kitchen
         attached_disk
       end
 
+      # Names of the standalone disks this driver created during the current
+      # action, tracked so they can be cleaned up if creation fails.
+      #
+      # @return [Array<String>] the created disk names
+      def created_disk_names
+        @created_disk_names ||= []
+      end
+
+      # Deletes every standalone disk created during a failed create, so a
+      # partial run does not leave billable disks behind.
+      #
+      # @return [void]
+      def delete_created_disks
+        created_disk_names.each { |disk_name| delete_disk(disk_name) }
+        created_disk_names.clear
+      end
+
+      # Deletes a standalone persistent disk, tolerating one that is already
+      # gone.
+      #
+      # @param unique_disk_name [String] the disk's name
+      # @return [void]
       def delete_disk(unique_disk_name)
         begin
           connection.get_disk(project, zone, unique_disk_name)
@@ -517,35 +830,64 @@ module Kitchen
         info("Disk #{unique_disk_name} deleted successfully.")
       end
 
+      # Partial URL identifying a disk type in the target zone.
+      #
+      # @param type [String] the disk type
+      # @return [String] the disk type URL
       def disk_type_url_for(type)
         "zones/#{zone}/diskTypes/#{type}"
       end
 
+      # Partial URL identifying a disk in the target project and zone.
+      #
+      # @param unique_disk_name [String] the disk's name
+      # @return [String] the disk's self link
       def disk_self_link(unique_disk_name)
         "projects/#{project}/zones/#{zone}/disks/#{unique_disk_name}"
       end
 
+      # Memoised URL of the image the boot disk is created from.
+      #
+      # @return [String, nil] the image URL, or nil if the image is missing
       def boot_disk_source_image
         @boot_disk_source ||= image_url
       end
 
+      # URL of an image, provided it exists in the image project.
+      #
+      # @param image [String] the image name, defaulting to the configured one
+      # @return [String, nil] the image URL, or nil if the image is missing
       def image_url(image = image_name)
         "projects/#{image_project}/global/images/#{image}" if image_exist?(image)
       end
 
+      # Resolves the current image name for an image family.
+      #
+      # @param image_family [String] the image family
+      # @return [String] the image name
       def image_name_for_family(image_family)
         image = connection.get_image_from_family(image_project, image_family)
         image.name
       end
 
+      # Partial URL identifying the machine type in the target zone.
+      #
+      # @return [String] the machine type URL
       def machine_type_url
         "zones/#{zone}/machineTypes/#{config[:machine_type]}"
       end
 
+      # The configured guest accelerators.
+      #
+      # @return [Array<Hash>] the accelerator configurations
       def guest_accelerators
         config[:guest_accelerators]
       end
 
+      # Builds accelerator definitions for the instance, skipping any entry
+      # that does not name a type and defaulting the count to one.
+      #
+      # @return [Array<Google::Apis::ComputeV1::AcceleratorConfig>] the accelerators
       def instance_guest_accelerators
         guest_accelerator_configs = []
 
@@ -567,6 +909,10 @@ module Kitchen
         guest_accelerator_configs
       end
 
+      # The instance metadata, merging the driver's own keys over any the user
+      # configured and adding a WinRM bootstrap script for Windows guests.
+      #
+      # @return [Hash{String => String}] the metadata
       def metadata
         default_metadata = {
           "created-by" => "test-kitchen",
@@ -584,6 +930,9 @@ module Kitchen
         config[:metadata].merge(default_metadata)
       end
 
+      # The metadata in the form the GCE API expects.
+      #
+      # @return [Google::Apis::ComputeV1::Metadata] the metadata object
       def instance_metadata
         Google::Apis::ComputeV1::Metadata.new.tap do |metadata_obj|
           metadata_obj.items = metadata.each_with_object([]) do |(k, v), memo|
@@ -595,14 +944,23 @@ module Kitchen
         end
       end
 
+      # The configured instance labels.
+      #
+      # @return [Hash] the labels
       def instance_labels
         config[:labels]
       end
 
+      # The username recorded in instance metadata.
+      #
+      # @return [String] the current user, or `"unknown"`
       def env_user
         ENV["USER"] || "unknown"
       end
 
+      # Builds the instance's single network interface.
+      #
+      # @return [Array<Google::Apis::ComputeV1::NetworkInterface>] the interface
       def instance_network_interfaces
         interface                = Google::Apis::ComputeV1::NetworkInterface.new
         interface.network        = network_url if config[:subnet_project].nil?
@@ -613,16 +971,26 @@ module Kitchen
         Array(interface)
       end
 
+      # Partial URL identifying the configured network.
+      #
+      # @return [String] the network URL
       def network_url
         "projects/#{network_project}/global/networks/#{config[:network]}"
       end
 
+      # Partial URL identifying the configured subnet.
+      #
+      # @return [String, nil] the subnet URL, or nil when no subnet is set
       def subnet_url
         return unless config[:subnet]
 
         "projects/#{subnet_project}/regions/#{region}/subnetworks/#{config[:subnet]}"
       end
 
+      # The interface's external access configuration, omitted entirely when
+      # `use_private_ip` is set.
+      #
+      # @return [Array<Google::Apis::ComputeV1::AccessConfig>] the access configs
       def interface_access_configs
         return [] if config[:use_private_ip]
 
@@ -633,30 +1001,55 @@ module Kitchen
         Array(access_config)
       end
 
+      # The instance's scheduling options.
+      #
+      # @return [Google::Apis::ComputeV1::Scheduling] the scheduling options
       def instance_scheduling
         Google::Apis::ComputeV1::Scheduling.new.tap do |scheduling|
-          scheduling.automatic_restart   = auto_restart?.to_s
-          scheduling.preemptible         = preemptible?.to_s
+          scheduling.automatic_restart   = auto_restart?
+          scheduling.preemptible         = preemptible?
           scheduling.on_host_maintenance = migrate_setting
         end
       end
 
+      # Whether the instance should be preemptible.
+      #
+      # @return [Boolean] true if preemptible
       def preemptible?
-        config[:preemptible]
+        config[:preemptible] ? true : false
       end
 
+      # Whether the instance may live-migrate. Always false when preemptible,
+      # which GCE does not allow to migrate.
+      #
+      # @return [Boolean] true if live migration is enabled
       def auto_migrate?
-        preemptible? ? false : config[:auto_migrate]
+        return false if preemptible?
+
+        config[:auto_migrate] ? true : false
       end
 
+      # Whether the instance should restart automatically. Always false when
+      # preemptible, which GCE does not allow to auto-restart.
+      #
+      # @return [Boolean] true if auto-restart is enabled
       def auto_restart?
-        preemptible? ? false : config[:auto_restart]
+        return false if preemptible?
+
+        config[:auto_restart] ? true : false
       end
 
+      # The host maintenance behaviour implied by {#auto_migrate?}.
+      #
+      # @return [String] `"MIGRATE"` or `"TERMINATE"`
       def migrate_setting
         auto_migrate? ? "MIGRATE" : "TERMINATE"
       end
 
+      # The service account and scopes attached to the instance.
+      #
+      # @return [Array<Google::Apis::ComputeV1::ServiceAccount>, nil] the
+      #   service accounts, or nil when no scopes are configured
       def instance_service_accounts
         return if config[:service_account_scopes].nil? || config[:service_account_scopes].empty?
 
@@ -667,28 +1060,54 @@ module Kitchen
         Array(service_account)
       end
 
+      # Expands a scope alias or bare scope name into a full OAuth 2.0 URL,
+      # passing through anything that is already one.
+      #
+      # @param scope [String] the scope, alias or URL
+      # @return [String] the fully-qualified scope URL
       def service_account_scope_url(scope)
         return scope if scope.start_with?("https://www.googleapis.com/auth/")
 
         "https://www.googleapis.com/auth/#{translate_scope_alias(scope)}"
       end
 
+      # Translates a `gcloud` scope alias into its scope path, returning the
+      # input unchanged when it is not a known alias.
+      #
+      # @param scope_alias [String] the alias to translate
+      # @return [String] the scope path
       def translate_scope_alias(scope_alias)
         SCOPE_ALIAS_MAP.fetch(scope_alias, scope_alias)
       end
 
+      # The configured network tags in the form the GCE API expects.
+      #
+      # @return [Google::Apis::ComputeV1::Tags] the tags object
       def instance_tags
         Google::Apis::ComputeV1::Tags.new.tap { |tag_obj| tag_obj.items = config[:tags] }
       end
 
+      # How long, in seconds, to wait for an operation or status change.
+      #
+      # @return [Integer] the wait timeout
       def wait_time
         config[:wait_time]
       end
 
+      # How long, in seconds, to sleep between status polls.
+      #
+      # @return [Integer] the poll interval
       def refresh_rate
         config[:refresh_rate]
       end
 
+      # Polls the yielded resource until it reports the requested status,
+      # logging each status change.
+      #
+      # @param requested_status [String] the status to wait for
+      # @yieldreturn [#status] the resource to poll
+      # @return [void]
+      # @raise [Timeout::Error] if the status is not reached within {#wait_time}
       def wait_for_status(requested_status, &block)
         last_status = ""
 
@@ -714,6 +1133,12 @@ module Kitchen
         end
       end
 
+      # Waits for a zone operation to finish and raises if it reported errors.
+      #
+      # @param operation [Google::Apis::ComputeV1::Operation] the operation
+      # @return [void]
+      # @raise [RuntimeError] if the operation completed with errors
+      # @raise [Timeout::Error] if the operation did not finish in time
       def wait_for_operation(operation)
         operation_name = operation.name
 
@@ -729,6 +1154,11 @@ module Kitchen
         raise "Operation #{operation_name} failed."
       end
 
+      # Waits until the suite's transport can reach the instance, destroying it
+      # if it never becomes reachable.
+      #
+      # @return [void]
+      # @raise [StandardError] if the server cannot be reached
       def wait_for_server
         instance.transport.connection(state).wait_until_ready
       rescue
@@ -737,10 +1167,18 @@ module Kitchen
         raise
       end
 
+      # Fetches the current state of a zone operation.
+      #
+      # @param operation_name [String] the operation name
+      # @return [Google::Apis::ComputeV1::Operation] the operation
       def zone_operation(operation_name)
         connection.get_zone_operation(project, zone, operation_name)
       end
 
+      # The errors a zone operation reported, if any.
+      #
+      # @param operation_name [String] the operation name
+      # @return [Array<Google::Apis::ComputeV1::Operation::Error::Error>] the errors
       def operation_errors(operation_name)
         operation = zone_operation(operation_name)
         return [] if operation.error.nil?
