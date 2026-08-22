@@ -56,7 +56,7 @@ Created and maintained by [Andrew Leonard](http://andyleonard.com)
 ([andy@hurricane-ridge.com](mailto:andy@hurricane-ridge.com)).
 
 The initial release drew heavily on the
-[kitchen-ec2](https://github.com/chef/kitchen-ec2/) gem for both
+[kitchen-ec2](https://github.com/test-kitchen/kitchen-ec2) gem for both
 inspiration and implementation details. Any bugs, however, are solely
 the author's own doing.
 
