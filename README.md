@@ -12,6 +12,7 @@ Compared to other IaaS providers, GCE offers fast instance launch times and sub-
 ## Requirements
 
 - Ruby 3.1 or later (already satisfied if you use Cinc Workstation)
+- Test Kitchen 3.0 or later
 - A Google Cloud project with the Compute Engine API enabled
 - Credentials available to [Google Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
 
@@ -202,7 +203,7 @@ The options below configure a single boot disk and are kept for backwards compat
 | --- | --- | --- |
 | `wait_time` | `600` | Seconds to wait for an operation or for the instance to become ready. |
 | `refresh_rate` | `2` | Seconds between status checks while waiting. |
-| `winpass_timeout` | `nil` | Seconds to wait when generating a Windows password. Uses the `gcewinpass` default if unset. |
+| `winpass_timeout` | `120` | Seconds to wait for the Windows guest agent to reset the password. |
 
 ## Examples
 

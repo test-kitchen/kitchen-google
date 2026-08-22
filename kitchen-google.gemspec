@@ -14,9 +14,8 @@ Gem::Specification.new do |s|
   s.files         = %w{LICENSE} + Dir.glob("lib/**/*")
   s.require_paths = ["lib"]
 
-  s.add_dependency "gcewinpass", "~> 1.1"
   s.add_dependency "google-apis-compute_v1", ">= 0.75"
-  s.add_dependency "test-kitchen", ">= 1.0.0", "< 5.0"
+  s.add_dependency "test-kitchen", ">= 3.0", "< 5.0"
 
   s.required_ruby_version = ">= 3.1"
 end

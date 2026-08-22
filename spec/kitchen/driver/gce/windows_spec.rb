@@ -16,7 +16,7 @@ RSpec.describe Kitchen::Driver::Gce, "Windows password reset" do
   describe "#update_windows_password" do
     context "with a non-WinRM transport" do
       it "does nothing" do
-        expect(GoogleComputeWindowsPassword).not_to receive(:new)
+        expect(Kitchen::Driver::Gce::WindowsPassword).not_to receive(:new)
 
         driver.update_windows_password("tk-test-1")
       end
@@ -32,9 +32,9 @@ RSpec.describe Kitchen::Driver::Gce, "Windows password reset" do
       let(:transport_name) { "winrm" }
       let(:transport_username) { "Administrator" }
       let(:driver_config) { { email: "user@example.com" } }
-      let(:winpass) { instance_double(GoogleComputeWindowsPassword, new_password: "s3cret") }
+      let(:winpass) { instance_double(Kitchen::Driver::Gce::WindowsPassword, new_password: "s3cret") }
 
-      before { allow(GoogleComputeWindowsPassword).to receive(:new).and_return(winpass) }
+      before { allow(Kitchen::Driver::Gce::WindowsPassword).to receive(:new).and_return(winpass) }
 
       it "stores the generated password in the state file" do
         driver.update_windows_password("tk-test-1")
@@ -42,22 +42,22 @@ RSpec.describe Kitchen::Driver::Gce, "Windows password reset" do
         expect(driver.state[:password]).to eq("s3cret")
       end
 
-      it "identifies the instance and user to reset" do
-        expect(GoogleComputeWindowsPassword).to receive(:new).with(
-          project: "test-project",
-          zone: "test-zone-1a",
-          instance_name: "tk-test-1",
-          email: "user@example.com",
-          username: "Administrator"
-        ).and_return(winpass)
+      it "hands the driver itself over, so the authorised client is reused" do
+        expect(Kitchen::Driver::Gce::WindowsPassword).to receive(:new)
+          .with(driver, any_args)
+          .and_return(winpass)
 
         driver.update_windows_password("tk-test-1")
       end
 
-      it "omits the timeout when winpass_timeout is not configured" do
-        expect(GoogleComputeWindowsPassword).to receive(:new)
-          .with(hash_excluding(:timeout))
-          .and_return(winpass)
+      it "identifies the instance, user and email to reset" do
+        expect(Kitchen::Driver::Gce::WindowsPassword).to receive(:new).with(
+          driver,
+          instance_name: "tk-test-1",
+          email: "user@example.com",
+          username: "Administrator",
+          timeout: nil
+        ).and_return(winpass)
 
         driver.update_windows_password("tk-test-1")
       end
@@ -73,13 +73,37 @@ RSpec.describe Kitchen::Driver::Gce, "Windows password reset" do
         let(:driver_config) { { email: "user@example.com", winpass_timeout: 120 } }
 
         it "passes the timeout through" do
-          expect(GoogleComputeWindowsPassword).to receive(:new)
-            .with(hash_including(timeout: 120))
+          expect(Kitchen::Driver::Gce::WindowsPassword).to receive(:new)
+            .with(driver, hash_including(timeout: 120))
             .and_return(winpass)
 
           driver.update_windows_password("tk-test-1")
         end
       end
+    end
+  end
+
+  # The driver and the password reset share one authorised API client. Proving
+  # that here stops a future change from quietly reintroducing a second
+  # ComputeService and a second application-default credentials lookup.
+  describe "reuse of the driver's API client" do
+    let(:transport_name) { "winrm" }
+    let(:driver_config) { { email: "user@example.com" } }
+
+    it "never builds its own connection or authorization" do
+      allow(compute).to receive(:get_instance).and_return(
+        ComputeApi.instance(name: "tk-test-1").tap { |i| i.metadata = Google::Apis::ComputeV1::Metadata.new(items: []) }
+      )
+      allow(compute).to receive(:set_instance_metadata).and_return(ComputeApi.operation)
+      allow(compute).to receive(:get_zone_operation).and_return(ComputeApi.operation)
+
+      expect(Google::Apis::ComputeV1::ComputeService).not_to receive(:new)
+      expect(Google::Auth).not_to receive(:get_application_default)
+
+      winpass = Kitchen::Driver::Gce::WindowsPassword.new(
+        driver, instance_name: "tk-test-1", email: "user@example.com"
+      )
+      winpass.publish_public_key
     end
   end
 end
