@@ -14,3 +14,8 @@ end
 group :cookstyle do
   gem "cookstyle", "~> 8.7"
 end
+
+group :docs do
+  gem "redcarpet"
+  gem "yard"
+end

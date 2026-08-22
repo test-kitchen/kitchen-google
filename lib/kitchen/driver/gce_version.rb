@@ -18,8 +18,16 @@
 # limitations under the License.
 #
 
+# Test Kitchen's top-level namespace.
 module Kitchen
+  # Namespace for Test Kitchen driver plugins.
   module Driver
+    # Version of the kitchen-google gem.
+    #
+    # Maintained by release-please, which rewrites the literal below on each
+    # release. Keep it on one line.
+    #
+    # @return [String] the gem version
     GCE_VERSION = "2.7.0"
   end
 end

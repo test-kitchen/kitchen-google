@@ -12,4 +12,28 @@ rescue LoadError
   puts "cookstyle/chefstyle is not available. (sudo) gem install cookstyle to do style checking."
 end
 
+begin
+  require "yard"
+
+  YARD::Rake::YardocTask.new(:yard) do |task|
+    task.stats_options = ["--list-undoc"]
+  end
+
+  namespace :yard do
+    desc "Report documentation coverage and list undocumented objects"
+    task :stats do
+      sh "yard stats --list-undoc"
+    end
+
+    desc "Serve the documentation locally at http://localhost:8808, reloading on change"
+    task :server do
+      sh "yard server --reload"
+    end
+  end
+rescue LoadError
+  puts "yard is not available. (sudo) gem install yard to generate documentation."
+end
+
+# Documentation is intentionally NOT part of the default task: missing YARD
+# comments should never fail CI.
 task default: %i{test style}

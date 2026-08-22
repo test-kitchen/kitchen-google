@@ -162,7 +162,7 @@ Disks are configured with the `disks` hash. Each key is a disk name, and each va
 | Option | Default | Description |
 | --- | --- | --- |
 | `disks` | one 10 GB `pd-standard` boot disk | Hash of disks to attach, keyed by disk name. Disk names must match `[a-z]([-a-z0-9]*[a-z0-9])?`. |
-| `disks.<name>.boot` | *first disk* | Marks this disk as the boot disk. Exactly one disk may be the boot disk; if none is marked, the first is used. A local SSD cannot be the boot disk. |
+| `disks.<name>.boot` | *first eligible disk* | Marks this disk as the boot disk. At most one disk may set `boot: true`. If none does, the first eligible disk is used — skipping local SSDs, which cannot boot, and any disk that sets `boot: false`. |
 | `disks.<name>.disk_size` | `10` | Size in GB. Must be omitted for `local-ssd`, which is always 375 GB. |
 | `disks.<name>.disk_type` | `"pd-standard"` | Disk type, e.g. `pd-standard`, `pd-ssd`, `pd-balanced`, `local-ssd`. |
 | `disks.<name>.autodelete_disk` | `true` | Delete the disk when the instance is destroyed. |
