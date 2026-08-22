@@ -7,3 +7,7 @@ name: 'Test'
 jobs:
   lint-unit:
     uses: test-kitchen/.github/.github/workflows/lint-unit.yml@main
+    with:
+      # Documentation and debugging gems are not needed to lint or test.
+      # YARD in particular must never gate CI.
+      bundle_without: "development:docs:debug"

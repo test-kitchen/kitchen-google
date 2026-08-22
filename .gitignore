@@ -3,3 +3,10 @@
 .ruby-version
 *.gem
 Gemfile.lock
+
+# YARD documentation output
+doc/
+.yardoc/
+
+# RSpec example status persistence
+spec/examples.txt
