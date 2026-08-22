@@ -1,5 +1,4 @@
 --markup markdown
---markup-provider redcarpet
 --output-dir doc
 --readme README.md
 --no-private

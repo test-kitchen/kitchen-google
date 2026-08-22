@@ -17,5 +17,13 @@ Gem::Specification.new do |s|
   s.add_dependency "google-apis-compute_v1", ">= 0.75"
   s.add_dependency "test-kitchen", ">= 3.0", "< 5.0"
 
+  # Formerly part of the standard library. These are no longer default gems,
+  # so they must be declared rather than assumed present.
+  s.add_dependency "base64", ">= 0.1"
+  s.add_dependency "date", ">= 3.2"
+  s.add_dependency "json", ">= 2.5"
+  s.add_dependency "securerandom", ">= 0.1"
+  s.add_dependency "timeout", ">= 0.2"
+
   s.required_ruby_version = ">= 3.1"
 end

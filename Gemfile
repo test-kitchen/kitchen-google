@@ -16,6 +16,5 @@ group :cookstyle do
 end
 
 group :docs do
-  gem "redcarpet"
   gem "yard"
 end
