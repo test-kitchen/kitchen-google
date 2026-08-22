@@ -28,6 +28,6 @@ module Kitchen
     # release. Keep it on one line.
     #
     # @return [String] the gem version
-    GCE_VERSION = "2.7.0"
+    GCE_VERSION = "2.8.0"
   end
 end
