@@ -16,10 +16,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "gcewinpass"
 require "google/apis/compute_v1"
 require "kitchen"
 require_relative "gce_version"
+require_relative "gce/windows_password"
 require "securerandom" unless defined?(SecureRandom)
 require "timeout" unless defined?(Timeout)
 
@@ -437,6 +437,8 @@ module Kitchen
       #
       # @param server_name [String] the GCE instance name
       # @return [void]
+      # @raise [RuntimeError] if the in-guest agent could not reset the password
+      # @raise [Timeout::Error] if the agent does not respond in time
       def update_windows_password(server_name)
         return unless winrm_transport?
 
@@ -444,15 +446,13 @@ module Kitchen
 
         info("Resetting the Windows password for user #{username} on #{server_name}...")
 
-        opts = {
-          project: project,
-          zone: zone,
+        state[:password] = WindowsPassword.new(
+          self,
           instance_name: server_name,
           email: config[:email],
           username: username,
-        }
-        opts[:timeout] = config[:winpass_timeout] unless config[:winpass_timeout].nil?
-        state[:password] = GoogleComputeWindowsPassword.new(**opts).new_password
+          timeout: config[:winpass_timeout]
+        ).new_password
 
         info("Password reset complete on #{server_name}.")
       end
