@@ -1,5 +1,12 @@
 # Change Log
 
+## [2.8.0](https://github.com/test-kitchen/kitchen-google/compare/v2.7.0...v2.8.0) (2026-08-22)
+
+
+### Features
+
+* rebuild the unit test suite and fix seven driver bugs ([#144](https://github.com/test-kitchen/kitchen-google/issues/144)) ([704b152](https://github.com/test-kitchen/kitchen-google/commit/704b1527c41c881ad44900acd6d98f6c5c08ab27))
+
 ## [2.7.0](https://github.com/test-kitchen/kitchen-google/compare/v2.6.2...v2.7.0) (2026-07-02)
 
 
