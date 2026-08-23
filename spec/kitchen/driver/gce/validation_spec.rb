@@ -328,10 +328,12 @@ RSpec.describe Kitchen::Driver::Gce, "configuration validation" do
         expect(driver.valid_disk_type?("pd-ssd")).to be(true)
       end
 
-      it "is false without calling the API when nil" do
+      # An unset type is what the driver sends by default, so that GCE can pick
+      # the one that suits the machine series.
+      it "is true without calling the API when nil" do
         expect(compute).not_to receive(:get_disk_type)
 
-        expect(driver.valid_disk_type?(nil)).to be(false)
+        expect(driver.valid_disk_type?(nil)).to be(true)
       end
     end
 

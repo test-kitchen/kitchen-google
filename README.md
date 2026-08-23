@@ -162,10 +162,10 @@ Disks are configured with the `disks` hash. Each key is a disk name, and each va
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `disks` | one 10 GB `pd-standard` boot disk | Hash of disks to attach, keyed by disk name. Disk names must match `[a-z]([-a-z0-9]*[a-z0-9])?`. |
+| `disks` | one 10 GB boot disk | Hash of disks to attach, keyed by disk name. Disk names must match `[a-z]([-a-z0-9]*[a-z0-9])?`. |
 | `disks.<name>.boot` | *first eligible disk* | Marks this disk as the boot disk. At most one disk may set `boot: true`. If none does, the first eligible disk is used — skipping local SSDs, which cannot boot, and any disk that sets `boot: false`. |
 | `disks.<name>.disk_size` | `10` | Size in GB. Must be omitted for `local-ssd`, which is always 375 GB. |
-| `disks.<name>.disk_type` | `"pd-standard"` | Disk type, e.g. `pd-standard`, `pd-ssd`, `pd-balanced`, `local-ssd`. |
+| `disks.<name>.disk_type` | *chosen by GCE* | Disk type, e.g. `pd-balanced`, `pd-ssd`, `hyperdisk-balanced`, `local-ssd`. See [disk types and machine series](#disk-types-and-machine-series). |
 | `disks.<name>.autodelete_disk` | `true` | Delete the disk when the instance is destroyed. |
 | `disks.<name>.custom_image` | `nil` | Image to create a non-boot disk from. |
 
@@ -187,6 +187,36 @@ driver:
       disk_size: 100
 ```
 
+#### Disk types and machine series
+
+`disk_type` is left unset unless you configure it, and GCE then picks the
+default for the instance's machine series: `pd-standard` on first- and
+second-generation series such as N1, N2 and E2, `pd-balanced` on C3, C3D and
+M3, and `hyperdisk-balanced` on C4, N4 and newer. This is why no `disk_type`
+is set by default — newer machine series reject the older disk types outright,
+so any fixed default would break some machine type.
+
+Set `disk_type` explicitly only when you want something other than that
+default, and check that the type you choose is supported by your `machine_type`.
+
+One exception is worth knowing about. Extra non-boot disks are created as
+standalone disks before the instance exists, so GCE has no machine series to
+derive a default from and falls back to `pd-standard` regardless of the
+instance's `machine_type`. On Hyperdisk-only machine series such as C4 and N4,
+set `disk_type` explicitly on those disks:
+
+```yaml
+driver:
+  name: gce
+  machine_type: n4-standard-2
+  disks:
+    boot-disk:
+      boot: true
+    data-disk:
+      disk_size: 100
+      disk_type: hyperdisk-balanced
+```
+
 #### Deprecated top-level disk options
 
 The options below configure a single boot disk and are kept for backwards compatibility. They cannot be combined with `disks`.
@@ -194,7 +224,7 @@ The options below configure a single boot disk and are kept for backwards compat
 | Option | Default | Description |
 | --- | --- | --- |
 | `disk_size` | `10` | Deprecated. Boot disk size in GB. Use `disks` instead. |
-| `disk_type` | `"pd-standard"` | Deprecated. Boot disk type. Use `disks` instead. |
+| `disk_type` | *chosen by GCE* | Deprecated. Boot disk type. Use `disks` instead. |
 | `autodelete_disk` | `true` | Deprecated. Delete the boot disk on destroy. Use `disks` instead. |
 
 ### Timing

@@ -125,11 +125,17 @@ module Kitchen
 
       # Configuration applied to every disk before the user's own settings.
       #
+      # Deliberately sets no `disk_type`. GCE derives an omitted disk type from
+      # the instance's machine series -- pd-standard on first- and
+      # second-generation series such as N1 and N2, pd-balanced on C3, C3D and
+      # M3, and hyperdisk-balanced on C4, N4 and newer -- so leaving it unset is
+      # the only default that is compatible with every machine type. Naming one
+      # here would fail outright on the families that no longer accept it.
+      #
       # @return [Hash] the per-disk defaults
       DISK_DEFAULT_CONFIG = {
         autodelete_disk: true,
         disk_size: 10,
-        disk_type: "pd-standard",
       }.freeze
 
       # Human-readable driver name shown in Test Kitchen output.
@@ -269,8 +275,11 @@ module Kitchen
           boot: true,
           autodelete_disk: config.fetch(:autodelete_disk, DISK_DEFAULT_CONFIG[:autodelete_disk]),
           disk_size: config.fetch(:disk_size, DISK_DEFAULT_CONFIG[:disk_size]),
-          disk_type: config.fetch(:disk_type, DISK_DEFAULT_CONFIG[:disk_type]),
         }
+
+        # Carry the key only when the user set it, so that an unset type stays
+        # absent rather than becoming an explicit nil. See DISK_DEFAULT_CONFIG.
+        disk_config[:disk_type] = config[:disk_type] if config[:disk_type]
 
         raise "Disk type #{disk_config[:disk_type]} is not valid" unless valid_disk_type?(disk_config[:disk_type])
 
@@ -525,10 +534,13 @@ module Kitchen
 
       # Whether a disk type exists in the target zone.
       #
+      # An unset type is valid: the driver sends no `diskType` at all and GCE
+      # substitutes the default for the instance's machine series.
+      #
       # @param disk_type [String, nil] the disk type to check
-      # @return [Boolean] true if the disk type is valid
+      # @return [Boolean] true if the disk type is valid or unset
       def valid_disk_type?(disk_type)
-        return false if disk_type.nil?
+        return true if disk_type.nil?
 
         check_api_call { connection.get_disk_type(project, zone, disk_type) }
       end
@@ -753,7 +765,7 @@ module Kitchen
         disk.boot           = true if disk_config[:boot]
         disk.auto_delete    = disk_config[:autodelete_disk]
         params.disk_size_gb = disk_config[:disk_size]
-        params.disk_type    = disk_type_url_for(disk_config[:disk_type])
+        params.disk_type    = disk_type_url_for(disk_config[:disk_type]) if disk_config[:disk_type]
 
         if local_ssd?(disk_config)
           info("Creating a #{LOCAL_SSD_SIZE_GB} GB local ssd as scratch disk (https://cloud.google.com/compute/docs/disks/#localssds).")
@@ -781,7 +793,7 @@ module Kitchen
         disk = Google::Apis::ComputeV1::Disk.new
         disk.name    = unique_disk_name
         disk.size_gb = disk_config[:disk_size]
-        disk.type    = disk_type_url_for(disk_config[:disk_type])
+        disk.type    = disk_type_url_for(disk_config[:disk_type]) if disk_config[:disk_type]
 
         info("Creating a #{disk_config[:disk_size]} GB disk named #{unique_disk_name}...")
         wait_for_operation(connection.insert_disk(project, zone, disk))
