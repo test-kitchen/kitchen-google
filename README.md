@@ -131,7 +131,7 @@ You must also specify **either `zone` or `region`**, and **either `image_family`
 | `inst_name` | `nil` | Explicit instance name. If unset, a unique name is generated from the suite and platform. |
 | `preemptible` | `false` | Launch as a [preemptible instance](https://cloud.google.com/compute/docs/instances/preemptible). |
 | `auto_restart` | `false` | Automatically restart the instance if it is terminated by GCE. Forced off for preemptible instances. |
-| `auto_migrate` | `false` | Live-migrate the instance during host maintenance. Forced off for preemptible instances. |
+| `auto_migrate` | `true` | Live-migrate the instance during host maintenance. Forced off for preemptible instances and for instances with `guest_accelerators`, neither of which GCE will migrate. Some machine families, including `e2-*`, reject `false` on a non-preemptible instance. |
 | `guest_accelerators` | `[]` | Array of accelerator (GPU) hashes, each with `type` and `count` keys. |
 | `metadata` | `{}` | Instance metadata key/value pairs. Merged with metadata the driver sets itself. |
 | `labels` | `{}` | Labels applied to the instance as key/value pairs. |
