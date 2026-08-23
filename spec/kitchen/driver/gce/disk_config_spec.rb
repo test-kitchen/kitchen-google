@@ -175,6 +175,24 @@ RSpec.describe Kitchen::Driver::Gce, "disk configuration" do
       end
     end
 
+    # A disk key with nothing under it is ordinary YAML -- `boot-disk:` on its
+    # own line parses to nil, not to an empty hash -- and it means exactly
+    # what an empty hash would: take the defaults.
+    context "with a disk name and no configuration under it" do
+      let(:driver_config) { { disks: { "boot-disk": nil } } }
+
+      it "treats it as a disk with no options rather than crashing" do
+        expect { driver.create_disks_config }.not_to raise_error
+      end
+
+      it "applies the disk defaults to it" do
+        driver.create_disks_config
+
+        expect(normalized_disks[:"boot-disk"][:disk_size]).to eq(10)
+        expect(normalized_disks[:"boot-disk"][:boot]).to be(true)
+      end
+    end
+
     describe "local SSDs" do
       context "with a valid local SSD" do
         let(:driver_config) { { disks: { boot: {}, scratch: { disk_type: "local-ssd" } } } }
