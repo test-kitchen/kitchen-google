@@ -186,6 +186,30 @@ RSpec.describe Kitchen::Driver::Gce, "configuration validation" do
         end
       end
 
+      context "with a WinRM transport logging in as the built-in Administrator" do
+        let(:transport_name) { "winrm" }
+        let(:transport_username) { "Administrator" }
+        let(:driver_config) { { email: "user@example.com" } }
+
+        it "warns that the account is disabled on Google's Windows images" do
+          driver.validate!
+
+          expect(log).to include("disabled on Google's Windows images")
+        end
+      end
+
+      context "with a WinRM transport logging in as some other account" do
+        let(:transport_name) { "winrm" }
+        let(:transport_username) { "kitchenadmin" }
+        let(:driver_config) { { email: "user@example.com" } }
+
+        it "says nothing about the built-in Administrator" do
+          driver.validate!
+
+          expect(log).not_to include("disabled on Google's Windows images")
+        end
+      end
+
       context "with the deprecated disk options" do
         let(:driver_config) { { disk_size: 20 } }
 
