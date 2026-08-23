@@ -201,9 +201,26 @@ The options below configure a single boot disk and are kept for backwards compat
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `wait_time` | `600` | Seconds to wait for an operation or for the instance to become ready. |
+| `wait_time` | `600` | Seconds to wait for a GCE operation to finish or a resource to reach a status - creating and deleting the instance, and creating disks. |
 | `refresh_rate` | `2` | Seconds between status checks while waiting. |
 | `winpass_timeout` | `120` | Seconds to wait for the Windows guest agent to reset the password. |
+
+`wait_time` does not cover waiting for the instance to accept connections.
+That wait belongs to the transport, which applies its own `max_wait_until_ready`
+(600 seconds by default) on top of its per-attempt `connection_timeout`, so an
+instance that is unreachable rather than merely slow can be waited on for
+considerably longer than `wait_time`:
+
+```yaml
+transport:
+  name: ssh
+  max_wait_until_ready: 120
+```
+
+This is worth setting if you use `use_private_ip` from outside the network, or
+WinRM without a firewall rule for port 5985 - in both cases the transport can
+never connect, and the default is a long time to spend finding that out on a
+running instance.
 
 ## Examples
 
