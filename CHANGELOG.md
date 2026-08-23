@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [3.1.0](https://github.com/test-kitchen/kitchen-google/compare/v3.0.3...v3.1.0) (2026-08-23)
+
+
+### Features
+
+* report live instance status to Test Kitchen 4 ([#167](https://github.com/test-kitchen/kitchen-google/issues/167)) ([192b716](https://github.com/test-kitchen/kitchen-google/commit/192b716185da815aa6fe476d17ed587b44462615))
+
 ## [3.0.3](https://github.com/test-kitchen/kitchen-google/compare/v3.0.2...v3.0.3) (2026-08-23)
 
 
