@@ -117,6 +117,28 @@ RSpec.describe Kitchen::Driver::Gce do
       end
     end
 
+    # GCE accepts the insert and only then reports the failure on the
+    # operation, so the server name has already been recorded but no instance
+    # ever came into being. Leaving the name behind makes the next `create` a
+    # silent no-op, because it returns early on `state[:server_name]`.
+    context "when the create operation fails and the instance never existed" do
+      before do
+        allow_successful_create
+        allow(compute).to receive(:get_zone_operation).and_return(
+          ComputeApi.operation(
+            errors: [{ code: "IP_IN_USE_BY_ANOTHER_RESOURCE", message: "IP is already being used" }]
+          )
+        )
+        allow(compute).to receive(:get_instance).and_raise(ComputeApi.client_error)
+      end
+
+      it "leaves no server name for the next create to trip over" do
+        expect { driver.create(state) }.to raise_error(/failed/)
+
+        expect(state).not_to have_key(:server_name)
+      end
+    end
+
     context "when the create operation never completes" do
       # The instance is already billable by the time the operation is polled,
       # so a timeout here must not leave it behind untracked.
@@ -218,6 +240,18 @@ RSpec.describe Kitchen::Driver::Gce do
 
       driver.destroy(server_name: "tk-gone")
       expect(log).to include("does not exist - assuming it has been already destroyed")
+    end
+
+    # A create that fails after `insert_instance` records the server in the
+    # state file, and the instance may never have come into being. Leaving the
+    # name behind would make `create`'s idempotency guard skip every retry.
+    it "still clears the state file when the instance is already gone" do
+      state = { server_name: "tk-gone", hostname: "203.0.113.4", zone: "test-zone-1a" }
+      allow(compute).to receive(:get_instance).and_raise(ComputeApi.client_error)
+
+      driver.destroy(state)
+
+      expect(state).to be_empty
     end
 
     it "destroys in the zone recorded in the state file, not the configured one" do
