@@ -105,10 +105,18 @@ module Kitchen
       default_config :metadata, {}
       default_config :labels, {}
 
+      # Pattern a GCE resource name must match in full. GCE applies the same
+      # pattern to instance names and disk names alike.
+      #
+      # @return [Regexp] the permitted name pattern
+      RESOURCE_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/
+
       # Pattern a GCE disk name must match in full.
       #
+      # @deprecated Use {RESOURCE_NAME_REGEX}, which is the same pattern and
+      #   says what it actually covers.
       # @return [Regexp] the permitted disk-name pattern
-      DISK_NAME_REGEX = /(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)/
+      DISK_NAME_REGEX = RESOURCE_NAME_REGEX
 
       # Longest instance name GCE accepts.
       #
@@ -754,16 +762,96 @@ module Kitchen
       # Builds a unique, GCE-legal instance name, falling back to a UUID when
       # the Test Kitchen instance name would make it too long.
       #
+      # Uppercase is folded rather than discarded. GCE disallows it, but it
+      # still carries meaning, and replacing it with hyphens turned an
+      # `inst_name` of `MyTestVM` into `-y-est--` -- a name the user could not
+      # recognise as anything they had typed.
+      #
       # @return [String] the instance name
+      # @raise [RuntimeError] if no legal name can be salvaged
       def generate_server_name
-        name = config[:inst_name] || "tk-#{instance.name.downcase}-#{SecureRandom.hex(3)}"
+        name = (config[:inst_name] || "tk-#{instance.name}-#{SecureRandom.hex(3)}").downcase
 
         if name.length > max_server_name_length
           warn("The TK instance name (#{instance.name}) has been removed from the GCE instance name due to size limitations. Consider setting shorter platform or suite names.")
           name = fallback_server_name
         end
 
-        name.gsub(/([^-a-z0-9])/, "-")
+        validated_server_name(name.gsub(/([^-a-z0-9])/, "-"))
+      end
+
+      # Checks a generated instance name against the pattern GCE enforces.
+      #
+      # Substitution cannot fix every name -- a leading underscore becomes a
+      # leading hyphen, which GCE still rejects -- so say so here rather than
+      # letting the API refuse a name the user never wrote.
+      #
+      # @param name [String] the generated name
+      # @return [String] the same name, once it is known to be legal
+      # @raise [RuntimeError] if the name does not match {RESOURCE_NAME_REGEX}
+      # @api private
+      def validated_server_name(name)
+        return name if name.match?(/\A#{RESOURCE_NAME_REGEX}\z/)
+
+        raise "Instance name #{name} is not valid. GCE names must match " \
+              "#{RESOURCE_NAME_REGEX.source} - they start with a lowercase letter, and end " \
+              "with a lowercase letter or a digit."
+      end
+
+      # Longest instance name that still leaves room for every disk named
+      # after it.
+      #
+      # GCE allows {MAX_INSTANCE_NAME_LENGTH} characters for an instance name
+      # and the same for a disk name, and {#create_disks} names each disk
+      # `"<instance>-<disk>"`. Spending the whole budget on the instance is
+      # what let a perfectly legal instance name produce an illegal disk name.
+      #
+      # @return [Integer] the maximum length of a generated instance name
+      # @raise [RuntimeError] if a configured disk name leaves no room at all
+      # @api private
+      def max_server_name_length
+        limit = MAX_INSTANCE_NAME_LENGTH - longest_disk_name_suffix
+
+        if limit < fallback_server_name_length
+          raise "Disk name #{longest_disk_name} is too long. GCE allows " \
+                "#{MAX_INSTANCE_NAME_LENGTH} characters for the disk name " \
+                "<instance name>-#{longest_disk_name}, which leaves no room for the instance name."
+        end
+
+        limit
+      end
+
+      # The longest disk name configured, which bounds the instance name.
+      #
+      # @return [String, nil] the longest disk name
+      # @api private
+      def longest_disk_name
+        Array(config[:disks]&.keys).map(&:to_s).max_by(&:length)
+      end
+
+      # Characters the longest disk name costs an instance name, including the
+      # hyphen joining the two.
+      #
+      # @return [Integer] the reserved length
+      # @api private
+      def longest_disk_name_suffix
+        longest_disk_name.nil? ? 0 : longest_disk_name.length + 1
+      end
+
+      # Name used when the Test Kitchen instance name will not fit.
+      #
+      # @return [String] a UUID-based instance name
+      # @api private
+      def fallback_server_name
+        "tk-#{SecureRandom.uuid}"
+      end
+
+      # Length of a {#fallback_server_name}, which is fixed.
+      #
+      # @return [Integer] the fallback name's length
+      # @api private
+      def fallback_server_name_length
+        @fallback_server_name_length ||= fallback_server_name.length
       end
 
       # Longest instance name that still leaves room for every disk named

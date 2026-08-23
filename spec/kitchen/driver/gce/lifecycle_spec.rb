@@ -282,8 +282,28 @@ RSpec.describe Kitchen::Driver::Gce do
     context "when the name contains characters GCE does not allow" do
       let(:driver_config) { { inst_name: "Not_Valid.Name" } }
 
-      it "replaces every disallowed character, including uppercase, with a hyphen" do
-        expect(driver.generate_server_name).to eq("-ot--alid--ame")
+      # Uppercase is disallowed but meaningful, so it is folded rather than
+      # thrown away. Replacing it with hyphens turned "MyTestVM" into
+      # "-y-est--", which GCE rejected with a name the user could not
+      # recognise as anything they had typed.
+      it "downcases letters and replaces only the rest with a hyphen" do
+        expect(driver.generate_server_name).to eq("not-valid-name")
+      end
+    end
+
+    context "when inst_name is given in mixed case" do
+      let(:driver_config) { { inst_name: "MyTestVM" } }
+
+      it "downcases it into a name GCE accepts" do
+        expect(driver.generate_server_name).to eq("mytestvm")
+      end
+    end
+
+    context "when the name cannot be salvaged into a legal one" do
+      let(:driver_config) { { inst_name: "_leading" } }
+
+      it "raises rather than letting GCE reject it" do
+        expect { driver.generate_server_name }.to raise_error(/-leading/)
       end
     end
 
