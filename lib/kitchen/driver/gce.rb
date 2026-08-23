@@ -21,6 +21,7 @@ require "kitchen"
 require_relative "gce_version"
 require_relative "gce/windows_password"
 require "securerandom" unless defined?(SecureRandom)
+require "time" unless defined?(Time.iso8601)
 require "timeout" unless defined?(Timeout)
 
 module Kitchen
@@ -245,6 +246,64 @@ module Kitchen
         state.delete(:server_name)
         state.delete(:hostname)
         state.delete(:zone)
+      end
+
+      # Reports whether the instance recorded in the state file is actually
+      # running, by asking GCE rather than trusting the state file.
+      #
+      # Test Kitchen 4 calls this for `kitchen list --live` and the `kitchen
+      # status` alias. Earlier versions never call it, so implementing it is
+      # safe across the whole supported range.
+      #
+      # The state file records only what the last action did, which goes stale
+      # in both directions: a preemptible instance GCE has reclaimed still
+      # reads as "Created", and an instance deleted outside Test Kitchen leaves
+      # a server name behind that no longer resolves.
+      #
+      # @param state [Hash] the Test Kitchen state hash
+      # @return [Hash] the status, in the shape `Kitchen::Instance` expects
+      def status(state)
+        @state      = state
+        server_name = state[:server_name]
+
+        return status_report(live: false, state_name: "not created") if server_name.nil?
+
+        gce_status = server_instance(server_name).status.to_s.downcase
+
+        status_report(
+          live: gce_status == "running",
+          state_name: gce_status,
+          resource_id: server_name
+        )
+      rescue Google::Apis::ClientError => e
+        debug("API error: #{e.message}")
+
+        status_report(
+          live: false,
+          state_name: "not found",
+          resource_id: server_name,
+          message: "Instance #{server_name} is recorded in the state file but no longer exists " \
+                   "in project #{project}, zone #{zone}."
+        )
+      end
+
+      # Builds a status hash in the shape `Kitchen::Instance` expects.
+      #
+      # @param live [Boolean] whether the instance is up and usable
+      # @param state_name [String] the state to display
+      # @param resource_id [String, nil] the GCE instance name
+      # @param message [String, nil] anything the user should know
+      # @return [Hash] the status
+      # @api private
+      def status_report(live:, state_name:, resource_id: nil, message: nil)
+        {
+          live: live,
+          state: state_name,
+          source: "driver",
+          resource_id: resource_id,
+          message: message,
+          checked_at: Time.now.utc.iso8601,
+        }.compact
       end
 
       # Whether the deprecated single-boot-disk options are configured.
