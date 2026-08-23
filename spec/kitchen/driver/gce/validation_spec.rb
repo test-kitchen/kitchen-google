@@ -81,6 +81,23 @@ RSpec.describe Kitchen::Driver::Gce, "configuration validation" do
       end
     end
 
+    # `image_name` gets a friendly message when it cannot be resolved;
+    # `image_family` fell through to the raw Google client error.
+    context "with an image family the API cannot see" do
+      let(:driver_config) { { image_name: nil, image_family: "no-such-family" } }
+
+      before { allow(compute).to receive(:get_image_from_family).and_raise(ComputeApi.client_error) }
+
+      it "rejects it in the driver's own terms" do
+        expect { driver.validate! }
+          .to raise_error(RuntimeError, /Image family no-such-family is not valid/)
+      end
+
+      it "names the project it searched" do
+        expect { driver.validate! }.to raise_error(RuntimeError, /test-project/)
+      end
+    end
+
     it "rejects a network the API cannot see" do
       allow(compute).to receive(:get_network).and_raise(ComputeApi.client_error)
 
