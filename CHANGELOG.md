@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## [3.0.3](https://github.com/test-kitchen/kitchen-google/compare/v3.0.2...v3.0.3) (2026-08-23)
+
+
+### Bug Fixes
+
+* accept a disk name with no configuration under it ([#164](https://github.com/test-kitchen/kitchen-google/issues/164)) ([88e029b](https://github.com/test-kitchen/kitchen-google/commit/88e029ba486e8d5a03e168b7fec6463afba970fe))
+* clear the state file when the instance is already gone ([#159](https://github.com/test-kitchen/kitchen-google/issues/159)) ([518a122](https://github.com/test-kitchen/kitchen-google/commit/518a1224e2f3238a81def52e077cd446335944aa))
+* downcase instance names instead of mangling them ([#163](https://github.com/test-kitchen/kitchen-google/issues/163)) ([4d56617](https://github.com/test-kitchen/kitchen-google/commit/4d56617987938569f0ee76b1542048b2e9117c57))
+* fail instead of silently creating a blank disk from a missing image ([#161](https://github.com/test-kitchen/kitchen-google/issues/161)) ([3ad2602](https://github.com/test-kitchen/kitchen-google/commit/3ad260244a4ff19ea9c873aca44b3a809736773f))
+* leave room for the disk name when generating an instance name ([#162](https://github.com/test-kitchen/kitchen-google/issues/162)) ([d91c792](https://github.com/test-kitchen/kitchen-google/commit/d91c792f4519f2305ff1b73fb40aa052a33a7f42))
+* remove the duplicated instance-name helpers ([#168](https://github.com/test-kitchen/kitchen-google/issues/168)) ([a9dcaf2](https://github.com/test-kitchen/kitchen-google/commit/a9dcaf2ba5dbe6f5838e1b330ab3c30b4e44a5fe))
+* report an unresolvable image family in the driver's own terms ([#165](https://github.com/test-kitchen/kitchen-google/issues/165)) ([5d96551](https://github.com/test-kitchen/kitchen-google/commit/5d96551cbda77e6faed7dec0b3a1e7881ba0c8d3))
+* stop sending duplicate metadata keys to GCE ([#158](https://github.com/test-kitchen/kitchen-google/issues/158)) ([a145063](https://github.com/test-kitchen/kitchen-google/commit/a145063237fec1f0cfd5e0a66ce1279d8232eb98))
+
 ## [3.0.2](https://github.com/test-kitchen/kitchen-google/compare/v3.0.1...v3.0.2) (2026-08-23)
 
 
