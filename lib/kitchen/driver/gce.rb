@@ -1125,11 +1125,20 @@ module Kitchen
 
       # Resolves the current image name for an image family.
       #
+      # A family the API cannot see is a configuration mistake like any other,
+      # so report it the way {#validate!} reports an unresolvable `image_name`
+      # rather than letting the Google client's own error escape.
+      #
       # @param image_family [String] the image family
       # @return [String] the image name
+      # @raise [RuntimeError] if the family does not exist in the image project
       def image_name_for_family(image_family)
         image = connection.get_image_from_family(image_project, image_family)
         image.name
+      rescue Google::Apis::ClientError => e
+        debug("API error: #{e.message}")
+        raise "Image family #{image_family} is not valid - it was not found in project " \
+              "#{image_project}. Check the family name and image_project."
       end
 
       # Partial URL identifying the machine type in the target zone.
