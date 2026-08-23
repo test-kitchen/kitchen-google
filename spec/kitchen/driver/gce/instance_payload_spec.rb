@@ -225,6 +225,30 @@ RSpec.describe Kitchen::Driver::Gce, "instance payload" do
       end
     end
 
+    # Test Kitchen symbolises every key it loads from kitchen.yml, so a user
+    # writing `created-by:` under `metadata:` reaches the driver as
+    # :"created-by" and never as the string the driver sets itself.
+    context "with user-supplied metadata that collides with a driver key" do
+      let(:driver_config) { { metadata: { "created-by": "me" } } }
+
+      it "lets the user's value win" do
+        expect(metadata["created-by"]).to eq("me")
+      end
+
+      it "sends the key only once" do
+        keys = driver.instance_metadata.items.map(&:key)
+
+        expect(keys.count("created-by")).to eq(1)
+      end
+
+      it "warns that a driver-set key was overridden" do
+        metadata
+
+        expect(log).to include("created-by")
+        expect(log).to match(/overrid/i)
+      end
+    end
+
     context "with a WinRM transport" do
       let(:transport_name) { "winrm" }
       let(:driver_config) { { email: "user@example.com" } }
