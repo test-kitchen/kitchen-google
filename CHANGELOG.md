@@ -1,5 +1,21 @@
 # Change Log
 
+## [3.0.0](https://github.com/test-kitchen/kitchen-google/compare/v2.8.0...v3.0.0) (2026-08-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* test-kitchen 1.x and 2.x are no longer supported. The gcewinpass gem is no longer a dependency; anything that loaded GoogleComputeWindowsPassword through this driver must require it itself.
+
+### Features
+
+* replace gcewinpass with a built-in Windows password reset ([#146](https://github.com/test-kitchen/kitchen-google/issues/146)) ([1842128](https://github.com/test-kitchen/kitchen-google/commit/1842128425bdbe4f4619555b17085425e0f0af73))
+
+
+### Bug Fixes
+
+* declare the standard library gems the driver requires ([#148](https://github.com/test-kitchen/kitchen-google/issues/148)) ([f0d91dc](https://github.com/test-kitchen/kitchen-google/commit/f0d91dc66ade0749af414e67954fa3e03547192f))
+
 ## [2.8.0](https://github.com/test-kitchen/kitchen-google/compare/v2.7.0...v2.8.0) (2026-08-22)
 
 
