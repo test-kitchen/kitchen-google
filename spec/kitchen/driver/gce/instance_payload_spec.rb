@@ -83,6 +83,14 @@ RSpec.describe Kitchen::Driver::Gce, "instance payload" do
       end
     end
 
+    context "with guest accelerators attached" do
+      let(:driver_config) { { guest_accelerators: [{ type: "nvidia-tesla-t4", count: 1 }] } }
+
+      it "forces termination on host maintenance, which GCE requires for GPUs" do
+        expect(scheduling.on_host_maintenance).to eq("TERMINATE")
+      end
+    end
+
     context "with a preemptible instance" do
       let(:driver_config) { { preemptible: true, auto_migrate: true, auto_restart: true } }
 
@@ -146,6 +154,16 @@ RSpec.describe Kitchen::Driver::Gce, "instance payload" do
 
       context "when enabled on a preemptible instance" do
         let(:driver_config) { { auto_migrate: true, preemptible: true } }
+
+        it "is false" do
+          expect(driver.auto_migrate?).to be(false)
+        end
+      end
+
+      context "when enabled on an instance with guest accelerators" do
+        let(:driver_config) do
+          { auto_migrate: true, guest_accelerators: [{ type: "nvidia-tesla-t4", count: 1 }] }
+        end
 
         it "is false" do
           expect(driver.auto_migrate?).to be(false)

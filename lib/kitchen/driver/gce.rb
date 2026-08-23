@@ -396,6 +396,7 @@ module Kitchen
         warn("Image project not specified - searching current project only") unless config[:image_project]
         warn("Subnet project not specified - searching current project only") if config[:subnet] && !config[:subnet_project]
         warn("Auto-migrate disabled for preemptible instance") if preemptible? && config[:auto_migrate]
+        warn("Auto-migrate disabled for instance with guest accelerators") if guest_accelerators? && config[:auto_migrate]
         warn("Auto-restart disabled for preemptible instance") if preemptible? && config[:auto_restart]
         warn("These configs are deprecated - consider using new disks configuration") if old_disk_configuration_present?
       end
@@ -1022,14 +1023,22 @@ module Kitchen
         config[:preemptible] ? true : false
       end
 
-      # Whether the instance may live-migrate. Always false when preemptible,
-      # which GCE does not allow to migrate.
+      # Whether the instance may live-migrate. Always false for preemptible
+      # instances and for instances with guest accelerators attached, neither
+      # of which GCE will migrate.
       #
       # @return [Boolean] true if live migration is enabled
       def auto_migrate?
-        return false if preemptible?
+        return false if preemptible? || guest_accelerators?
 
         config[:auto_migrate] ? true : false
+      end
+
+      # Whether any guest accelerators are attached.
+      #
+      # @return [Boolean] true if the instance has at least one accelerator
+      def guest_accelerators?
+        !Array(config[:guest_accelerators]).empty?
       end
 
       # Whether the instance should restart automatically. Always false when
