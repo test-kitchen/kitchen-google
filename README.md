@@ -133,6 +133,29 @@ cinc kitchen verify    # run your tests
 cinc kitchen destroy   # delete the instance
 ```
 
+### Checking whether an instance is still there
+
+`kitchen list` reports what the last action did, which is not the same as what
+GCE currently holds. On Test Kitchen 4 or later, `--live` asks GCE directly:
+
+```sh
+cinc kitchen list --live
+```
+
+```text
+Instance              Driver                ...  Last Action  Live Status
+baseline-ubuntu-2204  Google Compute (GCE)  ...  Created      terminated
+```
+
+The reported state is GCE's own — `running`, `terminated`, `provisioning`,
+`suspended` and so on — plus `not created` when nothing has been launched and
+`not found` when the state file names an instance that no longer exists.
+
+This is worth knowing about if you use `preemptible: true`, since GCE can
+reclaim the instance at any time and Test Kitchen's own record will still say
+`Created`. `kitchen list --live --json` includes the instance name and the time
+of the check.
+
 ## Configuration
 
 All options below are set under the `driver:` key in `kitchen.yml`.

@@ -23,6 +23,7 @@ Gem::Specification.new do |s|
   s.add_dependency "date", ">= 3.2"
   s.add_dependency "json", ">= 2.5"
   s.add_dependency "securerandom", ">= 0.1"
+  s.add_dependency "time", ">= 0.1"
   s.add_dependency "timeout", ">= 0.2"
 
   s.required_ruby_version = ">= 3.1"

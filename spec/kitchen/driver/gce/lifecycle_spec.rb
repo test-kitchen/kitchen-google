@@ -266,6 +266,81 @@ RSpec.describe Kitchen::Driver::Gce do
     end
   end
 
+  # Test Kitchen 4 asks the driver whether the instance is actually alive, for
+  # `kitchen list --live` and the `kitchen status` alias. Drivers that do not
+  # answer inherit "unknown" from Kitchen::Driver::Base.
+  describe "#status" do
+    # Kitchen::Instance#driver_status checks the arity before calling, and
+    # silently reports "unknown" for a status method that takes no state. A
+    # correct-looking implementation with the wrong signature is never called.
+    it "accepts the Kitchen state hash" do
+      expect(driver.method(:status).arity).to eq(1)
+    end
+
+    it "reports nothing created when the state file records no server" do
+      expect(compute).not_to receive(:get_instance)
+
+      expect(driver.status({})).to include(live: false, state: "not created")
+    end
+
+    context "with a running instance" do
+      before do
+        allow(compute).to receive(:get_instance).and_return(ComputeApi.instance(status: "RUNNING"))
+      end
+
+      it "reports it as live" do
+        expect(driver.status(server_name: "tk-test-1", zone: "test-zone-1a"))
+          .to include(live: true, state: "running")
+      end
+
+      it "identifies the instance it asked about" do
+        expect(driver.status(server_name: "tk-test-1", zone: "test-zone-1a"))
+          .to include(resource_id: "tk-test-1")
+      end
+
+      it "records when it checked, as an RFC 3339 timestamp" do
+        checked_at = driver.status(server_name: "tk-test-1", zone: "test-zone-1a")[:checked_at]
+
+        expect { Time.iso8601(checked_at) }.not_to raise_error
+      end
+
+      it "asks the zone recorded in the state file, not the configured one" do
+        expect(compute).to receive(:get_instance)
+          .with("test-project", "recorded-zone", "tk-test-1")
+          .and_return(ComputeApi.instance)
+
+        driver.status(server_name: "tk-test-1", zone: "recorded-zone")
+      end
+    end
+
+    # A preemptible instance GCE has reclaimed still exists, and the state file
+    # still says "Created". Reporting its real state is the point of the hook.
+    context "with an instance that exists but is not running" do
+      before do
+        allow(compute).to receive(:get_instance).and_return(ComputeApi.instance(status: "TERMINATED"))
+      end
+
+      it "reports GCE's own state and does not call it live" do
+        expect(driver.status(server_name: "tk-test-1", zone: "test-zone-1a"))
+          .to include(live: false, state: "terminated")
+      end
+    end
+
+    context "with a server recorded that no longer exists" do
+      before { allow(compute).to receive(:get_instance).and_raise(ComputeApi.client_error) }
+
+      it "reports it as gone rather than raising" do
+        expect(driver.status(server_name: "tk-gone", zone: "test-zone-1a"))
+          .to include(live: false, state: "not found")
+      end
+
+      it "says the state file is out of date" do
+        expect(driver.status(server_name: "tk-gone", zone: "test-zone-1a")[:message])
+          .to match(/tk-gone/)
+      end
+    end
+  end
+
   describe "#generate_server_name" do
     it "derives a name from the Test Kitchen instance name" do
       expect(driver.generate_server_name).to match(/\Atk-default-ubuntu-2204-[0-9a-f]{6}\z/)
