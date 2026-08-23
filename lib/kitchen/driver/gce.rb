@@ -222,8 +222,11 @@ module Kitchen
 
       # Destroys the GCE instance recorded in the state file.
       #
-      # Does nothing when the state file records no server, or when the
-      # instance no longer exists in GCE.
+      # Does nothing when the state file records no server. An instance that no
+      # longer exists in GCE is treated as already destroyed, but the state file
+      # is still cleared: a create that fails after `insert_instance` records a
+      # server that may never have come into being, and leaving the name behind
+      # would make {#create}'s idempotency guard skip every subsequent retry.
       #
       # @param state [Hash] the Test Kitchen state hash, mutated in place to
       #   remove `:server_name`, `:hostname` and `:zone`
@@ -233,14 +236,13 @@ module Kitchen
         server_name = state[:server_name]
         return if server_name.nil?
 
-        unless server_exist?(server_name)
+        if server_exist?(server_name)
+          info("Destroying GCE instance <#{server_name}>...")
+          wait_for_operation(connection.delete_instance(project, zone, server_name))
+          info("GCE instance <#{server_name}> destroyed.")
+        else
           info("GCE instance <#{server_name}> does not exist - assuming it has been already destroyed.")
-          return
         end
-
-        info("Destroying GCE instance <#{server_name}>...")
-        wait_for_operation(connection.delete_instance(project, zone, server_name))
-        info("GCE instance <#{server_name}> destroyed.")
 
         state.delete(:server_name)
         state.delete(:hostname)
