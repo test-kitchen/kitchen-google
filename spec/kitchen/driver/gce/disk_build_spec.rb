@@ -177,6 +177,32 @@ RSpec.describe Kitchen::Driver::Gce, "disk construction" do
       end
     end
 
+    # An unresolvable image made `image_url` return nil, and GCE reads a nil
+    # sourceImage as "give me a blank disk" -- so the run succeeded and quietly
+    # handed back an empty disk. The boot disk has guarded against this in
+    # `validate!` for years; extra disks never did.
+    context "when an extra disk's custom image cannot be found" do
+      let(:driver_config) do
+        { disks: { boot: { boot: true }, extra: { custom_image: "no-such-image" } } }
+      end
+
+      before do
+        allow(compute).to receive(:get_image) do |_project, image_name|
+          raise ComputeApi.client_error if image_name == "no-such-image"
+
+          ComputeApi.image(name: image_name)
+        end
+      end
+
+      it "raises rather than silently building a blank disk" do
+        expect { built_disks }.to raise_error(/no-such-image/)
+      end
+
+      it "names the project it searched, which is where the confusion lives" do
+        expect { built_disks }.to raise_error(/test-project/)
+      end
+    end
+
     context "when the image is larger than the requested boot disk" do
       # GCE rejects a boot disk smaller than the image it is cloned from.
       # Every Windows image is 50 GB and several Linux ones are 20 GB, so the

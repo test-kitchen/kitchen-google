@@ -204,7 +204,7 @@ Disks are configured with the `disks` hash. Each key is a disk name, and each va
 | `disks.<name>.disk_size` | `10` | Size in GB. Raised automatically when the image it is created from is larger. Must be omitted for `local-ssd`, which is always 375 GB. |
 | `disks.<name>.disk_type` | *chosen by GCE* | Disk type, e.g. `pd-balanced`, `pd-ssd`, `hyperdisk-balanced`, `local-ssd`. See [disk types and machine series](#disk-types-and-machine-series). |
 | `disks.<name>.autodelete_disk` | `true` | Delete the disk when the instance is destroyed. |
-| `disks.<name>.custom_image` | `nil` | Image to create a non-boot disk from. |
+| `disks.<name>.custom_image` | `nil` | Image to create a non-boot disk from. Looked up in `image_project`, the same project as the boot image, so if you boot from a public image such as `ubuntu-os-cloud` your own images are not visible here. Creation fails if the image cannot be found. |
 
 Example:
 

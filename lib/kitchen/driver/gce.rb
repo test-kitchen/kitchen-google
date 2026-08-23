@@ -869,10 +869,11 @@ module Kitchen
           params.source_image = boot_disk_source_image
           params.disk_name    = unique_disk_name
         else
-          params.disk_size_gb = disk_size_for_image(disk_config[:disk_size], disk_config[:custom_image])
-          info("Creating a #{params.disk_size_gb} GB extra disk named #{unique_disk_name} from image #{disk_config[:custom_image]}...")
-          params.source_image = image_url(disk_config[:custom_image])
+          custom_image        = disk_config[:custom_image]
+          params.source_image = custom_image_url(custom_image)
+          params.disk_size_gb = disk_size_for_image(disk_config[:disk_size], custom_image)
           params.disk_name    = unique_disk_name
+          info("Creating a #{params.disk_size_gb} GB extra disk named #{unique_disk_name} from image #{custom_image}...")
         end
         disk.initialize_params = params
         disk
@@ -1010,6 +1011,28 @@ module Kitchen
       # @return [String, nil] the image URL, or nil if the image is missing
       def image_url(image = image_name)
         "projects/#{image_project}/global/images/#{image}" if image_exist?(image)
+      end
+
+      # URL of a non-boot disk's `custom_image`, which must exist.
+      #
+      # GCE reads a missing `sourceImage` as a request for a blank disk, so an
+      # image the driver cannot resolve would otherwise produce an empty disk
+      # and a successful run -- a test that silently verifies nothing. The boot
+      # disk has been guarded against exactly this in {#validate!} for years.
+      #
+      # The message names the project searched because that is where the
+      # surprise usually is: `custom_image` is resolved in `image_project`, so
+      # booting from a public image such as ubuntu-os-cloud sends the lookup
+      # there rather than to the user's own project.
+      #
+      # @param image [String] the custom image name
+      # @return [String] the image URL
+      # @raise [RuntimeError] if the image does not exist in the image project
+      # @api private
+      def custom_image_url(image)
+        image_url(image) ||
+          raise("Disk image #{image} was not found in project #{image_project} - check the " \
+                "custom_image name, and note that custom images are looked up in image_project.")
       end
 
       # Resolves the current image name for an image family.
