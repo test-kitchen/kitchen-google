@@ -857,62 +857,6 @@ module Kitchen
         @fallback_server_name_length ||= fallback_server_name.length
       end
 
-      # Longest instance name that still leaves room for every disk named
-      # after it.
-      #
-      # GCE allows {MAX_INSTANCE_NAME_LENGTH} characters for an instance name
-      # and the same for a disk name, and {#create_disks} names each disk
-      # `"<instance>-<disk>"`. Spending the whole budget on the instance is
-      # what let a perfectly legal instance name produce an illegal disk name.
-      #
-      # @return [Integer] the maximum length of a generated instance name
-      # @raise [RuntimeError] if a configured disk name leaves no room at all
-      # @api private
-      def max_server_name_length
-        limit = MAX_INSTANCE_NAME_LENGTH - longest_disk_name_suffix
-
-        if limit < fallback_server_name_length
-          raise "Disk name #{longest_disk_name} is too long. GCE allows " \
-                "#{MAX_INSTANCE_NAME_LENGTH} characters for the disk name " \
-                "<instance name>-#{longest_disk_name}, which leaves no room for the instance name."
-        end
-
-        limit
-      end
-
-      # The longest disk name configured, which bounds the instance name.
-      #
-      # @return [String, nil] the longest disk name
-      # @api private
-      def longest_disk_name
-        Array(config[:disks]&.keys).map(&:to_s).max_by(&:length)
-      end
-
-      # Characters the longest disk name costs an instance name, including the
-      # hyphen joining the two.
-      #
-      # @return [Integer] the reserved length
-      # @api private
-      def longest_disk_name_suffix
-        longest_disk_name.nil? ? 0 : longest_disk_name.length + 1
-      end
-
-      # Name used when the Test Kitchen instance name will not fit.
-      #
-      # @return [String] a UUID-based instance name
-      # @api private
-      def fallback_server_name
-        "tk-#{SecureRandom.uuid}"
-      end
-
-      # Length of a {#fallback_server_name}, which is fixed.
-      #
-      # @return [Integer] the fallback name's length
-      # @api private
-      def fallback_server_name_length
-        @fallback_server_name_length ||= fallback_server_name.length
-      end
-
       # Builds every disk for the instance, creating standalone persistent
       # disks up front where required. The boot disk is always listed first.
       #
