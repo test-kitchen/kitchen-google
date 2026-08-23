@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## [3.0.2](https://github.com/test-kitchen/kitchen-google/compare/v3.0.1...v3.0.2) (2026-08-23)
+
+
+### Bug Fixes
+
+* default auto_migrate to true so E2 machine types work ([#151](https://github.com/test-kitchen/kitchen-google/issues/151)) ([6fb433f](https://github.com/test-kitchen/kitchen-google/commit/6fb433fc20d3447fffd4977fbeb16bf92b6f5568))
+* do not leak the instance when create fails after the insert ([#153](https://github.com/test-kitchen/kitchen-google/issues/153)) ([7693d76](https://github.com/test-kitchen/kitchen-google/commit/7693d767646adc97892f001dc15bd8ba3d0723e1))
+* document and warn about what WinRM actually needs ([#154](https://github.com/test-kitchen/kitchen-google/issues/154)) ([d318aeb](https://github.com/test-kitchen/kitchen-google/commit/d318aeb0c694250f13e847a2a159cc729f6bfd13))
+* size boot disks from the image instead of failing ([#152](https://github.com/test-kitchen/kitchen-google/issues/152)) ([d8e92b2](https://github.com/test-kitchen/kitchen-google/commit/d8e92b2b575e09041d7b5ca5cb0bf2d461edcfb4))
+
 ## [3.0.1](https://github.com/test-kitchen/kitchen-google/compare/v3.0.0...v3.0.1) (2026-08-23)
 
 
