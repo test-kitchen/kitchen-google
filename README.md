@@ -34,6 +34,43 @@ gem "kitchen-google"
 
 ...then run `bundle install`.
 
+### Provisioners and verifiers
+
+Test Kitchen 4.0 stopped bundling the Chef provisioners. It now ships only the
+`dummy`, `external` and `shell` provisioners, and the `busser`, `dummy` and
+`shell` verifiers — so the plugins named in the examples below come from
+separate gems, whatever driver you use.
+
+If you use Cinc Workstation or Chef Workstation, they are already installed and
+there is nothing to do.
+
+In a standalone Ruby, install the ones your `kitchen.yml` names alongside this
+driver:
+
+| `kitchen.yml` value | Gem |
+| --- | --- |
+| `provisioner: cinc_infra` | [`kitchen-cinc`](https://rubygems.org/gems/kitchen-cinc) |
+| `provisioner: chef_infra` | [`kitchen-cinc`](https://rubygems.org/gems/kitchen-cinc) (runs Cinc Client) or [`kitchen-omnibus-chef`](https://rubygems.org/gems/kitchen-omnibus-chef) (runs Chef Infra Client) |
+| `verifier: inspec` | [`kitchen-inspec`](https://rubygems.org/gems/kitchen-inspec) |
+| `verifier: cinc_auditor` | ships with Cinc Workstation |
+
+```ruby
+gem "kitchen-google"
+gem "kitchen-cinc"    # provisioner
+gem "kitchen-inspec"  # verifier
+```
+
+Omitting them fails in Test Kitchen before this driver is ever reached:
+
+```text
+Could not load the 'cinc_infra' provisioner from the load path. Did you mean:
+dummy, external, shell ? Please ensure that your provisioner is installed as a
+gem or included in your Gemfile if using Bundler.
+```
+
+On Test Kitchen 3.x the `chef_*` provisioners were built in, so this is a common
+surprise when upgrading.
+
 ## Authentication
 
 The driver authenticates using [Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials). Set them up once with the [gcloud CLI](https://cloud.google.com/sdk/docs/install):
