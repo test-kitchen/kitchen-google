@@ -189,12 +189,16 @@ module Kitchen
         info("Creating GCE instance <#{server_name}> in project #{project}, zone #{zone}...")
         operation = connection.insert_instance(project, zone, create_instance_object(server_name))
 
+        # GCE starts billing for the instance as soon as the insert is
+        # accepted, so record it before waiting on the operation. Anything that
+        # goes wrong from here on can then be torn down by the rescue below,
+        # and by `kitchen destroy` if the process does not survive to run it.
+        state[:server_name] = server_name
+        state[:zone]        = zone
+
         wait_for_operation(operation)
 
-        server              = server_instance(server_name)
-        state[:server_name] = server_name
-        state[:hostname]    = ip_address_for(server)
-        state[:zone]        = zone
+        state[:hostname] = ip_address_for(server_instance(server_name))
 
         info("Server <#{server_name}> created.")
 
