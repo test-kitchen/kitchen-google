@@ -55,8 +55,8 @@ module ComputeApi
   end
 
   # @return [Google::Apis::ComputeV1::Image]
-  def image(name: "test-image")
-    M::Image.new(name: name)
+  def image(name: "test-image", disk_size_gb: 10)
+    M::Image.new(name: name, disk_size_gb: disk_size_gb)
   end
 
   # @return [Google::Apis::ComputeV1::Disk]

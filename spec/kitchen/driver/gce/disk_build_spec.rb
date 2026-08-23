@@ -177,6 +177,78 @@ RSpec.describe Kitchen::Driver::Gce, "disk construction" do
       end
     end
 
+    context "when the image is larger than the requested boot disk" do
+      # GCE rejects a boot disk smaller than the image it is cloned from.
+      # Every Windows image is 50 GB and several Linux ones are 20 GB, so the
+      # 10 GB default cannot be sent as-is.
+      before do
+        allow(compute).to receive(:get_image).and_return(ComputeApi.image(disk_size_gb: 50))
+      end
+
+      context "and no size was requested" do
+        it "sizes the boot disk to the image" do
+          expect(built_disks.first.initialize_params.disk_size_gb).to eq(50)
+        end
+      end
+
+      context "and a smaller size was requested" do
+        let(:driver_config) { { disks: { disk1: { boot: true, disk_size: 10 } } } }
+
+        it "raises the boot disk to the image size" do
+          expect(built_disks.first.initialize_params.disk_size_gb).to eq(50)
+        end
+
+        it "says why the requested size was not honoured" do
+          built_disks
+
+          expect(log).to include("smaller than image")
+        end
+      end
+
+      context "and a larger size was requested" do
+        let(:driver_config) { { disks: { disk1: { boot: true, disk_size: 100 } } } }
+
+        it "honours the requested size" do
+          expect(built_disks.first.initialize_params.disk_size_gb).to eq(100)
+        end
+      end
+    end
+
+    context "when an extra disk's custom image is larger than its requested size" do
+      let(:driver_config) do
+        {
+          disks: {
+            disk1: { boot: true },
+            disk2: { custom_image: "big-image", disk_size: 10 },
+          },
+        }
+      end
+
+      before do
+        allow(compute).to receive(:get_image) do |_project, image_name|
+          ComputeApi.image(name: image_name, disk_size_gb: image_name == "big-image" ? 40 : 10)
+        end
+      end
+
+      it "raises the extra disk to the custom image's size" do
+        expect(built_disks.last.initialize_params.disk_size_gb).to eq(40)
+      end
+
+      it "leaves the boot disk alone" do
+        expect(built_disks.first.initialize_params.disk_size_gb).to eq(10)
+      end
+    end
+
+    context "when the image reports no size" do
+      before do
+        allow(compute).to receive(:get_image).and_return(ComputeApi.image(disk_size_gb: nil))
+      end
+
+      it "sends the requested size unchanged" do
+        expect(built_disks.first.initialize_params.disk_size_gb).to eq(10)
+      end
+    end
+
     context "with autodelete_disk disabled" do
       let(:driver_config) { { disks: { boot: { boot: true, autodelete_disk: false } } } }
 
