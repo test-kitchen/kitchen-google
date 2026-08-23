@@ -271,5 +271,43 @@ RSpec.describe Kitchen::Driver::Gce do
         expect(log).to include("has been removed from the GCE instance name")
       end
     end
+
+    # GCE allows 63 characters for an instance name and 63 for a disk name,
+    # and every disk this driver creates is named "<instance>-<disk>". The
+    # instance name therefore cannot spend the whole budget. Live repro: a
+    # 51-character Test Kitchen instance name produced a legal 61-character
+    # instance name and an illegal 67-character disk name, and GCE rejected
+    # the insert quoting the driver's own DISK_NAME_REGEX back at it.
+    context "when the instance name would leave no room for the disk suffix" do
+      let(:kitchen_instance_name) { "long-suite-name-to-overflow-disk-naming-ubuntu-2204" }
+
+      def generated_name
+        allow_valid_configuration
+        driver.create_disks_config
+        driver.generate_server_name
+      end
+
+      it "keeps the derived disk name within the GCE limit" do
+        expect("#{generated_name}-disk1".length)
+          .to be <= Kitchen::Driver::Gce::MAX_INSTANCE_NAME_LENGTH
+      end
+
+      context "with a longer disk name configured" do
+        let(:driver_config) { { disks: { "a-rather-long-disk-name": { boot: true } } } }
+
+        it "leaves room for that one too" do
+          expect("#{generated_name}-a-rather-long-disk-name".length)
+            .to be <= Kitchen::Driver::Gce::MAX_INSTANCE_NAME_LENGTH
+        end
+      end
+
+      context "with a disk name that leaves room for no instance name at all" do
+        let(:driver_config) { { disks: { "#{"d" * 60}": { boot: true } } } }
+
+        it "says which disk name is the problem" do
+          expect { generated_name }.to raise_error(/#{"d" * 60}/)
+        end
+      end
+    end
   end
 end
