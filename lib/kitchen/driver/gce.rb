@@ -804,16 +804,62 @@ module Kitchen
           info("Creating a #{LOCAL_SSD_SIZE_GB} GB local ssd as scratch disk (https://cloud.google.com/compute/docs/disks/#localssds).")
           disk.type = "SCRATCH"
         elsif disk.boot
-          info("Creating a #{disk_config[:disk_size]} GB boot disk named #{unique_disk_name} from image #{image_name}...")
+          params.disk_size_gb = disk_size_for_image(disk_config[:disk_size], image_name)
+          info("Creating a #{params.disk_size_gb} GB boot disk named #{unique_disk_name} from image #{image_name}...")
           params.source_image = boot_disk_source_image
           params.disk_name    = unique_disk_name
         else
-          info("Creating a #{disk_config[:disk_size]} GB extra disk named #{unique_disk_name} from image #{disk_config[:custom_image]}...")
+          params.disk_size_gb = disk_size_for_image(disk_config[:disk_size], disk_config[:custom_image])
+          info("Creating a #{params.disk_size_gb} GB extra disk named #{unique_disk_name} from image #{disk_config[:custom_image]}...")
           params.source_image = image_url(disk_config[:custom_image])
           params.disk_name    = unique_disk_name
         end
         disk.initialize_params = params
         disk
+      end
+
+      # The size to request for a disk cloned from an image.
+      #
+      # GCE refuses to create a disk smaller than the image it is cloned from,
+      # and the driver's own 10 GB default is smaller than many stock images -
+      # every Windows image is 50 GB, and Rocky and CentOS are 20 GB. Rather
+      # than fail the run over a size the user never chose, raise the request
+      # to what the image needs and say so.
+      #
+      # @param requested [Integer, nil] the configured size in gigabytes
+      # @param image [String, nil] the image the disk is cloned from
+      # @return [Integer, nil] the size to request
+      # @api private
+      def disk_size_for_image(requested, image)
+        image_size = image_disk_size_gb(image)
+        return requested if image_size.nil? || (!requested.nil? && requested >= image_size)
+
+        warn("Requested disk size of #{requested} GB is smaller than image #{image} " \
+             "(#{image_size} GB) - creating a #{image_size} GB disk instead.")
+        image_size
+      end
+
+      # The size, in gigabytes, of an image in the image project.
+      #
+      # Memoised per image name, since the boot image is looked up more than
+      # once during a single action.
+      #
+      # @param image [String, nil] the image name
+      # @return [Integer, nil] the image's size, or nil if it cannot be read
+      # @api private
+      def image_disk_size_gb(image)
+        return if image.nil?
+
+        @image_disk_sizes ||= {}
+        return @image_disk_sizes[image] if @image_disk_sizes.key?(image)
+
+        @image_disk_sizes[image] =
+          begin
+            connection.get_image(image_project, image).disk_size_gb
+          rescue Google::Apis::ClientError => e
+            debug("Unable to read the size of image #{image}: #{e.message}")
+            nil
+          end
       end
 
       # Creates a standalone persistent disk, waits for it to become ready, and

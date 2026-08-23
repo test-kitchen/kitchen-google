@@ -164,7 +164,7 @@ Disks are configured with the `disks` hash. Each key is a disk name, and each va
 | --- | --- | --- |
 | `disks` | one 10 GB boot disk | Hash of disks to attach, keyed by disk name. Disk names must match `[a-z]([-a-z0-9]*[a-z0-9])?`. |
 | `disks.<name>.boot` | *first eligible disk* | Marks this disk as the boot disk. At most one disk may set `boot: true`. If none does, the first eligible disk is used — skipping local SSDs, which cannot boot, and any disk that sets `boot: false`. |
-| `disks.<name>.disk_size` | `10` | Size in GB. Must be omitted for `local-ssd`, which is always 375 GB. |
+| `disks.<name>.disk_size` | `10` | Size in GB. Raised automatically when the image it is created from is larger. Must be omitted for `local-ssd`, which is always 375 GB. |
 | `disks.<name>.disk_type` | *chosen by GCE* | Disk type, e.g. `pd-balanced`, `pd-ssd`, `hyperdisk-balanced`, `local-ssd`. See [disk types and machine series](#disk-types-and-machine-series). |
 | `disks.<name>.autodelete_disk` | `true` | Delete the disk when the instance is destroyed. |
 | `disks.<name>.custom_image` | `nil` | Image to create a non-boot disk from. |
@@ -223,7 +223,7 @@ The options below configure a single boot disk and are kept for backwards compat
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `disk_size` | `10` | Deprecated. Boot disk size in GB. Use `disks` instead. |
+| `disk_size` | `10` | Deprecated. Boot disk size in GB, raised automatically when the image is larger. Use `disks` instead. |
 | `disk_type` | *chosen by GCE* | Deprecated. Boot disk type. Use `disks` instead. |
 | `autodelete_disk` | `true` | Deprecated. Delete the boot disk on destroy. Use `disks` instead. |
 
