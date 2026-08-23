@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [3.0.1](https://github.com/test-kitchen/kitchen-google/compare/v3.0.0...v3.0.1) (2026-08-23)
+
+
+### Bug Fixes
+
+* stop defaulting disk_type to pd-standard ([#150](https://github.com/test-kitchen/kitchen-google/issues/150)) ([a242c16](https://github.com/test-kitchen/kitchen-google/commit/a242c16eef8ee6a7cdb296fce947a97c657c2def))
+
 ## [3.0.0](https://github.com/test-kitchen/kitchen-google/compare/v2.8.0...v3.0.0) (2026-08-23)
 
 ### ⚠ BREAKING CHANGES
