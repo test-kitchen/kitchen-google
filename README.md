@@ -133,7 +133,7 @@ You must also specify **either `zone` or `region`**, and **either `image_family`
 | `auto_restart` | `false` | Automatically restart the instance if it is terminated by GCE. Forced off for preemptible instances. |
 | `auto_migrate` | `true` | Live-migrate the instance during host maintenance. Forced off for preemptible instances and for instances with `guest_accelerators`, neither of which GCE will migrate. Some machine families, including `e2-*`, reject `false` on a non-preemptible instance. |
 | `guest_accelerators` | `[]` | Array of accelerator (GPU) hashes, each with `type` and `count` keys. |
-| `metadata` | `{}` | Instance metadata key/value pairs. Merged with metadata the driver sets itself. |
+| `metadata` | `{}` | Instance metadata key/value pairs. Merged over the metadata the driver sets itself (`created-by`, `test-kitchen-instance`, `test-kitchen-user`, and `windows-startup-script-ps1` on Windows), so setting one of those keys replaces the driver's value and logs a warning. |
 | `labels` | `{}` | Labels applied to the instance as key/value pairs. |
 | `tags` | `[]` | Network tags applied to the instance, used by firewall rules. |
 

@@ -1000,8 +1000,8 @@ module Kitchen
         guest_accelerator_configs
       end
 
-      # The instance metadata, merging the driver's own keys over any the user
-      # configured and adding a WinRM bootstrap script for Windows guests.
+      # The instance metadata: the driver's own keys, overlaid with any the
+      # user configured, plus a WinRM bootstrap script for Windows guests.
       #
       # @return [Hash{String => String}] the metadata
       def metadata
@@ -1018,7 +1018,28 @@ module Kitchen
           end
         end
 
-        config[:metadata].merge(default_metadata)
+        default_metadata.merge(user_metadata(default_metadata.keys))
+      end
+
+      # The user's own metadata, keyed the way the GCE API expects.
+      #
+      # Test Kitchen symbolises every key it loads from `kitchen.yml`, so a
+      # user writing `created-by:` reaches the driver as `:"created-by"` and
+      # never as the string the driver sets itself. Merging the two hashes
+      # untouched therefore sends both spellings of the same key, and GCE
+      # rejects the instance outright with "Metadata has duplicate keys".
+      #
+      # @param driver_keys [Array<String>] keys the driver sets itself, warned
+      #   about when the user replaces one
+      # @return [Hash{String => Object}] the user's metadata, string-keyed
+      # @api private
+      def user_metadata(driver_keys)
+        metadata = config[:metadata].transform_keys(&:to_s)
+
+        overridden = driver_keys & metadata.keys
+        warn("Overriding metadata set by the driver: #{overridden.join(", ")}") unless overridden.empty?
+
+        metadata
       end
 
       # The metadata in the form the GCE API expects.
