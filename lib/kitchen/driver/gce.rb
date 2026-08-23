@@ -197,15 +197,21 @@ module Kitchen
 
         server_name = generate_server_name
 
+        # Pin the zone before anything billable exists. In region mode it is
+        # picked at random, so cleanup would otherwise have no way to know
+        # where to look for the disks created below.
+        state[:zone] = zone
+
+        # Record the name before the request goes out, not after it returns.
+        # GCE starts billing as soon as the insert is accepted, and it may
+        # accept one whose response never reaches us -- an interrupted or
+        # timed-out request can leave an instance running that the state file
+        # knows nothing about, holding disks that cleanup then cannot delete.
+        # `destroy` copes with a name that never became an instance.
+        state[:server_name] = server_name
+
         info("Creating GCE instance <#{server_name}> in project #{project}, zone #{zone}...")
         operation = connection.insert_instance(project, zone, create_instance_object(server_name))
-
-        # GCE starts billing for the instance as soon as the insert is
-        # accepted, so record it before waiting on the operation. Anything that
-        # goes wrong from here on can then be torn down by the rescue below,
-        # and by `kitchen destroy` if the process does not survive to run it.
-        state[:server_name] = server_name
-        state[:zone]        = zone
 
         wait_for_operation(operation)
 
@@ -231,29 +237,37 @@ module Kitchen
         raise
       end
 
-      # Destroys the GCE instance recorded in the state file.
+      # Destroys the GCE instance recorded in the state file, together with any
+      # standalone disks an earlier create left behind.
       #
-      # Does nothing when the state file records no server. An instance that no
-      # longer exists in GCE is treated as already destroyed, but the state file
-      # is still cleared: a create that fails after `insert_instance` records a
-      # server that may never have come into being, and leaving the name behind
-      # would make {#create}'s idempotency guard skip every subsequent retry.
+      # An instance that no longer exists in GCE is treated as already
+      # destroyed, but the state file is still cleared: a create that fails
+      # after `insert_instance` records a server that may never have come into
+      # being, and leaving the name behind would make {#create}'s idempotency
+      # guard skip every subsequent retry.
+      #
+      # Disks are deleted after the instance, which holds them until it is
+      # gone. A create interrupted before it reached `insert_instance` records
+      # no server at all, so they are cleaned up whether or not there is one.
       #
       # @param state [Hash] the Test Kitchen state hash, mutated in place to
-      #   remove `:server_name`, `:hostname` and `:zone`
+      #   remove `:server_name`, `:hostname`, `:zone` and `:created_disks`
       # @return [void]
       def destroy(state)
         @state      = state
         server_name = state[:server_name]
-        return if server_name.nil?
 
-        if server_exist?(server_name)
-          info("Destroying GCE instance <#{server_name}>...")
-          wait_for_operation(connection.delete_instance(project, zone, server_name))
-          info("GCE instance <#{server_name}> destroyed.")
-        else
-          info("GCE instance <#{server_name}> does not exist - assuming it has been already destroyed.")
+        unless server_name.nil?
+          if server_exist?(server_name)
+            info("Destroying GCE instance <#{server_name}>...")
+            wait_for_operation(connection.delete_instance(project, zone, server_name))
+            info("GCE instance <#{server_name}> destroyed.")
+          else
+            info("GCE instance <#{server_name}> does not exist - assuming it has been already destroyed.")
+          end
         end
+
+        delete_created_disks
 
         state.delete(:server_name)
         state.delete(:hostname)
@@ -1041,21 +1055,28 @@ module Kitchen
         attached_disk
       end
 
-      # Names of the standalone disks this driver created during the current
-      # action, tracked so they can be cleaned up if creation fails.
+      # Names of the standalone disks this driver has created, held in the Test
+      # Kitchen state file rather than in memory.
+      #
+      # These disks bill from the moment GCE creates them, which is before the
+      # instance exists, and the driver's own cleanup cannot be relied on to
+      # remove them: `Interrupt` is not a `StandardError`, so pressing Ctrl-C
+      # during a create skips the rescue entirely. Test Kitchen writes the
+      # state file whatever happens, so recording the names there is what makes
+      # a later `kitchen destroy` able to find them.
       #
       # @return [Array<String>] the created disk names
       def created_disk_names
-        @created_disk_names ||= []
+        state[:created_disks] ||= []
       end
 
-      # Deletes every standalone disk created during a failed create, so a
-      # partial run does not leave billable disks behind.
+      # Deletes every standalone disk this driver created, so a partial run
+      # does not leave billable disks behind.
       #
       # @return [void]
       def delete_created_disks
         created_disk_names.each { |disk_name| delete_disk(disk_name) }
-        created_disk_names.clear
+        state.delete(:created_disks)
       end
 
       # Deletes a standalone persistent disk, tolerating one that is already
