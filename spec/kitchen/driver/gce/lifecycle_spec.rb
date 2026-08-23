@@ -117,6 +117,58 @@ RSpec.describe Kitchen::Driver::Gce do
       end
     end
 
+    context "when the create operation never completes" do
+      # The instance is already billable by the time the operation is polled,
+      # so a timeout here must not leave it behind untracked.
+      before do
+        allow_successful_create
+        allow(compute).to receive(:insert_instance).and_return(ComputeApi.operation(name: "create-op"))
+        allow(compute).to receive(:delete_instance).and_return(ComputeApi.operation(name: "delete-op"))
+        allow(compute).to receive(:get_zone_operation) do |_project, _zone, name|
+          raise Timeout::Error, "execution expired" if name == "create-op"
+
+          ComputeApi.operation(name: name)
+        end
+      end
+
+      it "destroys the instance it asked GCE to create" do
+        expect(compute).to receive(:delete_instance)
+          .with("test-project", "test-zone-1a", /\Atk-default-ubuntu-2204-/)
+          .and_return(ComputeApi.operation(name: "delete-op"))
+
+        expect { driver.create(state) }.to raise_error(Timeout::Error)
+      end
+
+      it "leaves no server behind in the state file" do
+        expect { driver.create(state) }.to raise_error(Timeout::Error)
+
+        expect(state).not_to have_key(:server_name)
+        expect(state).not_to have_key(:zone)
+      end
+    end
+
+    context "when the new instance turns out to have no address" do
+      before do
+        allow_successful_create(server: ComputeApi.instance_without_network)
+      end
+
+      it "destroys the instance it just created" do
+        expect(compute).to receive(:delete_instance)
+          .with("test-project", "test-zone-1a", /\Atk-default-ubuntu-2204-/)
+          .and_return(ComputeApi.operation)
+
+        expect { driver.create(state) }.to raise_error(/Unable to determine public IP/)
+      end
+
+      it "leaves no server behind in the state file" do
+        allow(compute).to receive(:delete_instance).and_return(ComputeApi.operation)
+
+        expect { driver.create(state) }.to raise_error(/Unable to determine public IP/)
+
+        expect(state).not_to have_key(:server_name)
+      end
+    end
+
     context "when the transport never becomes reachable" do
       before do
         allow_successful_create
