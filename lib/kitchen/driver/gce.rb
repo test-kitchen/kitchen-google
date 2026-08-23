@@ -132,6 +132,22 @@ module Kitchen
         disk_type: "pd-standard",
       }.freeze
 
+      # Local Windows account Test Kitchen's WinRM transport defaults to, and
+      # which Google's Windows images ship disabled.
+      #
+      # @return [String] the built-in administrator account name
+      BUILTIN_ADMINISTRATOR = "administrator".freeze
+
+      # Told to the user when they are about to wait out a WinRM timeout for a
+      # reason the driver can see coming.
+      #
+      # @return [String] the warning text
+      BUILTIN_ADMINISTRATOR_WARNING =
+        "The WinRM transport is connecting as the built-in Administrator account, which is " \
+        "disabled on Google's Windows images. The guest agent resets its password without " \
+        "enabling it, so the login will be refused. Set transport.username to any other name " \
+        "and the agent will create that account instead.".freeze
+
       # Human-readable driver name shown in Test Kitchen output.
       #
       # @return [String] the driver's display name
@@ -388,6 +404,7 @@ module Kitchen
         raise "You cannot use autodelete_disk, disk_size or disk_type with the new disks configuration" if old_disk_configuration_present? && new_disk_configuration_present?
         raise "Disk image #{config[:image_name]} is not valid - check your image name and image project" if boot_disk_source_image.nil?
 
+        warn(BUILTIN_ADMINISTRATOR_WARNING) if winrm_transport? && builtin_administrator?
         warn("Both zone and region specified - region will be ignored.") if config[:zone] && config[:region]
         warn("Both image family and name specified - image family will be ignored") if config[:image_family] && config[:image_name]
         warn("Image project not specified - searching current project only") unless config[:image_project]
@@ -423,6 +440,14 @@ module Kitchen
             "https://www.googleapis.com/auth/compute",
           ]
         )
+      end
+
+      # Whether the WinRM transport is configured to log in as the built-in
+      # Administrator account.
+      #
+      # @return [Boolean] true if the transport username is `administrator`
+      def builtin_administrator?
+        instance.transport[:username].to_s.casecmp?(BUILTIN_ADMINISTRATOR)
       end
 
       # Whether the suite's transport is WinRM, implying a Windows guest.

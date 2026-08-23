@@ -259,7 +259,8 @@ driver:
 
 ### Windows
 
-The WinRM transport requires `email` so the driver can generate a password.
+Windows guests need three things beyond the Linux setup: an `email` address, a
+username that is not `Administrator`, and a firewall rule that lets WinRM in.
 
 ```yaml
 driver:
@@ -269,13 +270,46 @@ driver:
   image_family: windows-2022
   image_project: windows-cloud
   email: me@example.com
+  tags:
+    - test-kitchen-winrm
 
 transport:
   name: winrm
+  # Not "Administrator" - see below.
+  username: kitchen
 
 platforms:
   - name: windows-2022
 ```
+
+**`email`** identifies the requesting user in the key exchange the driver uses
+to reset the password. It is required, and validation fails without it.
+
+**`username`** must not be the built-in `Administrator` account, which is
+Test Kitchen's default for the WinRM transport. Google's Windows images ship
+that account disabled, and the guest agent resets its password without
+enabling it, so the login is refused and the run dies at
+`WinRM::WinRMAuthorizationError`. Any other name works: the agent creates the
+account, adds it to the local Administrators group, and enables it. The driver
+warns if it sees this before you have to wait out the failure.
+
+**Firewall.** Nothing in the default VPC allows WinRM. The `default-allow-*`
+rules on an auto mode network cover SSH, RDP and ICMP, but not TCP 5985, so
+without a rule of your own `kitchen create` hangs at "Waiting for server to be
+ready" until it times out. The driver adds a matching rule *inside* the guest
+via a startup script, but that cannot open the VPC. Create the rule once per
+project, and tag the instances with `tags` so it applies to them:
+
+```sh
+gcloud compute firewall-rules create test-kitchen-winrm \
+  --project my-gcp-project \
+  --allow tcp:5985 \
+  --target-tags test-kitchen-winrm \
+  --source-ranges 0.0.0.0/0
+```
+
+Narrow `--source-ranges` to the addresses you run Test Kitchen from rather
+than leaving it open to the internet.
 
 ### Attaching a GPU
 
