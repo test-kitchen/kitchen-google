@@ -23,9 +23,13 @@ RSpec.describe Kitchen::Driver::Gce, "disk configuration" do
 
   describe "#create_disks_config" do
     context "with no disk configuration at all" do
-      it "configures a single default boot disk" do
+      # GCE resolves an omitted disk type from the instance's machine series:
+      # pd-standard on N1/N2/E2, pd-balanced on C3/C3D/M3, hyperdisk-balanced
+      # on C4/N4 and newer. Naming one here would break the newer families,
+      # which reject the older types outright.
+      it "configures a single default boot disk with no disk type" do
         expect(normalized_disks).to eq(
-          disk1: { autodelete_disk: true, disk_size: 10, disk_type: "pd-standard", boot: true }
+          disk1: { autodelete_disk: true, disk_size: 10, boot: true }
         )
       end
     end
@@ -52,7 +56,7 @@ RSpec.describe Kitchen::Driver::Gce, "disk configuration" do
 
       it "fills the rest from the defaults" do
         expect(normalized_disks).to eq(
-          disk1: { boot: true, autodelete_disk: true, disk_size: 50, disk_type: "pd-standard" }
+          disk1: { boot: true, autodelete_disk: true, disk_size: 50 }
         )
       end
     end
@@ -62,9 +66,18 @@ RSpec.describe Kitchen::Driver::Gce, "disk configuration" do
         { disks: { disk1: { boot: true, disk_size: 20 }, disk2: { disk_type: "pd-ssd" } } }
       end
 
+      it "validates only the type the user actually set" do
+        validated = []
+        allow(compute).to receive(:get_disk_type) { |_project, _zone, type| validated << type }
+
+        driver.create_disks_config
+
+        expect(validated).to eq(["pd-ssd"])
+      end
+
       it "applies the defaults to every disk without discarding user settings" do
         expect(normalized_disks).to eq(
-          disk1: { autodelete_disk: true, disk_size: 20, disk_type: "pd-standard", boot: true },
+          disk1: { autodelete_disk: true, disk_size: 20, boot: true },
           disk2: { autodelete_disk: true, disk_size: 10, disk_type: "pd-ssd" }
         )
       end

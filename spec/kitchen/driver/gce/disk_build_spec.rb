@@ -46,11 +46,15 @@ RSpec.describe Kitchen::Driver::Gce, "disk construction" do
           .to eq("projects/test-project/global/images/test-image")
       end
 
-      it "applies the default size and type" do
-        params = built_disks.first.initialize_params
+      it "applies the default size" do
+        expect(built_disks.first.initialize_params.disk_size_gb).to eq(10)
+      end
 
-        expect(params.disk_size_gb).to eq(10)
-        expect(params.disk_type).to eq("zones/test-zone-1a/diskTypes/pd-standard")
+      # Omitting diskType is what makes the newer machine families work: GCE
+      # fills in the default for the instance's machine series, which is the
+      # only type guaranteed to be compatible with it.
+      it "sends no disk type, leaving the choice to GCE" do
+        expect(built_disks.first.initialize_params.disk_type).to be_nil
       end
 
       it "auto-deletes the disk with the instance by default" do
@@ -91,6 +95,21 @@ RSpec.describe Kitchen::Driver::Gce, "disk construction" do
 
       it "waits for the standalone disk to become READY" do
         expect(compute).to receive(:get_disk).at_least(:once).and_return(ComputeApi.disk(status: "READY"))
+
+        built_disks
+      end
+    end
+
+    context "with an extra persistent disk of no particular type" do
+      let(:driver_config) do
+        { disks: { boot: { boot: true }, data: { disk_size: 50 } } }
+      end
+
+      it "sends no disk type for the standalone disk either" do
+        expect(compute).to receive(:insert_disk) do |_project, _zone, disk|
+          expect(disk.type).to be_nil
+          ComputeApi.operation
+        end
 
         built_disks
       end
