@@ -333,12 +333,15 @@ module Kitchen
       # Applies the disk defaults to one disk entry and validates the result.
       #
       # @param disk_name [String, Symbol] the disk's name, used in error messages
-      # @param disk_config [Hash] the user-supplied configuration for this disk
+      # @param disk_config [Hash, nil] the user-supplied configuration for this
+      #   disk. A bare `disk-name:` in `kitchen.yml` parses to nil rather than
+      #   to an empty hash, and means the same thing: take the defaults.
       # @return [Hash] the disk configuration with defaults applied
       # @raise [RuntimeError] if the disk type is invalid, a local SSD is
       #   marked bootable, or a size is given for a local SSD
       # @api private
       def normalize_disk(disk_name, disk_config)
+        disk_config ||= {}
         normalized = DISK_DEFAULT_CONFIG.merge(disk_config)
 
         unless valid_disk_type?(normalized[:disk_type])
