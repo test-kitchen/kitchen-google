@@ -61,15 +61,17 @@ RSpec.describe Kitchen::Driver::Gce, "instance payload" do
       expect(scheduling.preemptible).not_to be_a(String)
     end
 
-    it "terminates on host maintenance by default" do
-      expect(scheduling.on_host_maintenance).to eq("TERMINATE")
+    it "migrates on host maintenance by default" do
+      # GCE's own default. The E2 machine family, among others, rejects
+      # TERMINATE outright unless the instance is preemptible.
+      expect(scheduling.on_host_maintenance).to eq("MIGRATE")
     end
 
-    context "with auto_migrate enabled" do
-      let(:driver_config) { { auto_migrate: true } }
+    context "with auto_migrate disabled" do
+      let(:driver_config) { { auto_migrate: false } }
 
-      it "migrates on host maintenance" do
-        expect(scheduling.on_host_maintenance).to eq("MIGRATE")
+      it "terminates on host maintenance" do
+        expect(scheduling.on_host_maintenance).to eq("TERMINATE")
       end
     end
 
@@ -122,6 +124,18 @@ RSpec.describe Kitchen::Driver::Gce, "instance payload" do
     end
 
     describe "#auto_migrate?" do
+      it "is true by default" do
+        expect(driver.auto_migrate?).to be(true)
+      end
+
+      context "when disabled on a non-preemptible instance" do
+        let(:driver_config) { { auto_migrate: false } }
+
+        it "is false" do
+          expect(driver.auto_migrate?).to be(false)
+        end
+      end
+
       context "when enabled on a non-preemptible instance" do
         let(:driver_config) { { auto_migrate: true } }
 

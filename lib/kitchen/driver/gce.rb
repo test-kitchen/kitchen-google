@@ -89,7 +89,10 @@ module Kitchen
       default_config :tags, []
       default_config :preemptible, false
       default_config :auto_restart, false
-      default_config :auto_migrate, false
+      # Matches GCE's own default for onHostMaintenance. Several machine
+      # families, E2 among them, reject TERMINATE unless the instance is
+      # preemptible, so defaulting this off makes them unusable.
+      default_config :auto_migrate, true
       default_config :image_family, nil
       default_config :image_name, nil
       default_config :image_project, nil
