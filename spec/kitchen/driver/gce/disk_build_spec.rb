@@ -345,6 +345,75 @@ RSpec.describe Kitchen::Driver::Gce, "disk construction" do
     end
   end
 
+  # An interrupted `kitchen create` never reaches the driver's own cleanup:
+  # Interrupt is not a StandardError, so the rescue does not run. The only
+  # thing that survives is the state file, so anything already billable has to
+  # be recorded there rather than in memory.
+  describe "recording standalone disks in the state file" do
+    let(:driver_config) do
+      { disks: { boot: { boot: true }, data: { disk_size: 50 } } }
+    end
+
+    it "records the zone before creating anything billable" do
+      allow_successful_create
+      allow(compute).to receive(:insert_disk).and_raise(Interrupt)
+      state = {}
+
+      expect { driver.create(state) }.to raise_error(Interrupt)
+
+      expect(state[:zone]).to eq("test-zone-1a")
+    end
+
+    it "records a standalone disk as soon as GCE has created it" do
+      allow_successful_create
+      driver.state = state = {}
+
+      driver.create_attached_disk("tk-test-1-data", disk_size: 50)
+
+      expect(state[:created_disks]).to eq(["tk-test-1-data"])
+    end
+
+    # GCE may well create the instance even when the response never reaches
+    # us, so the name has to be recorded before the request goes out. Without
+    # it, cleanup finds a disk it cannot delete because an instance it does not
+    # know about is still holding it.
+    it "records the server name before the insert request is issued" do
+      allow_successful_create
+      allow(driver).to receive(:generate_server_name).and_return("tk-test-1")
+      allow(compute).to receive(:insert_instance).and_raise(Interrupt)
+      state = {}
+
+      expect { driver.create(state) }.to raise_error(Interrupt)
+
+      expect(state[:server_name]).to eq("tk-test-1")
+    end
+
+    it "leaves an interrupted create's disk recorded for a later destroy to find" do
+      allow_successful_create
+      allow(driver).to receive(:generate_server_name).and_return("tk-test-1")
+      allow(compute).to receive(:insert_instance).and_raise(Interrupt)
+      state = {}
+
+      expect { driver.create(state) }.to raise_error(Interrupt)
+
+      expect(state[:created_disks]).to eq(["tk-test-1-data"])
+    end
+
+    it "deletes disks an interrupted create left behind, even with no server recorded" do
+      allow(compute).to receive(:get_disk).and_return(ComputeApi.disk)
+      allow(compute).to receive(:get_zone_operation).and_return(ComputeApi.operation)
+      state = { zone: "test-zone-1a", created_disks: ["tk-test-1-data"] }
+
+      expect(compute).to receive(:delete_disk)
+        .with("test-project", "test-zone-1a", "tk-test-1-data")
+        .and_return(ComputeApi.operation)
+
+      driver.destroy(state)
+
+      expect(state).to be_empty
+    end
+  end
+
   describe "#delete_created_disks" do
     it "does nothing when no standalone disks were created" do
       expect(compute).not_to receive(:delete_disk)
