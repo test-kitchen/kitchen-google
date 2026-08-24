@@ -10,4 +10,4 @@ jobs:
     with:
       # Documentation and debugging gems are not needed to lint or test.
       # YARD in particular must never gate CI.
-      bundle_without: "development:docs:debug"
+      bundle_without: "development:docs"
