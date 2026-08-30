@@ -40,8 +40,70 @@ RSpec.describe Kitchen::Driver::Gce, "instance payload" do
       end
     end
 
-    it "builds an instance the Google client recognises" do
+  end
+
+  # Every builder below is exercised in isolation further down this file. This
+  # block proves each one is actually wired into the object that reaches
+  # `insert_instance`, which is the one failure an isolated example cannot see:
+  # a dropped assignment ships an instance with no tags, no labels and no
+  # scheduling, and every per-builder example still passes.
+  describe "the payload handed to insert_instance" do
+    subject(:payload) { created_instance_payload }
+
+    let(:driver_config) do
+      {
+        tags: %w{web db},
+        labels: { "team" => "platform" },
+        metadata: { "owner" => "platform" },
+        guest_accelerators: [{ type: "nvidia-tesla-t4", count: 2 }],
+        service_account_scopes: ["storage-ro"],
+      }
+    end
+
+    it "is an instance the Google client recognises" do
       expect(payload).to be_a(Google::Apis::ComputeV1::Instance)
+    end
+
+    it "attaches the disks" do
+      expect(payload.disks).not_to be_empty
+      expect(payload.disks).to all(be_a(Google::Apis::ComputeV1::AttachedDisk))
+    end
+
+    it "attaches the guest accelerators" do
+      expect(payload.guest_accelerators.map(&:accelerator_count)).to eq([2])
+    end
+
+    it "attaches the metadata" do
+      expect(payload.metadata.items.map(&:key)).to include("owner", "created-by")
+    end
+
+    it "attaches the network interface" do
+      expect(payload.network_interfaces.size).to eq(1)
+    end
+
+    it "attaches the scheduling options" do
+      expect(payload.scheduling).to be_a(Google::Apis::ComputeV1::Scheduling)
+    end
+
+    it "attaches the service account and its scopes" do
+      expect(payload.service_accounts.first.scopes)
+        .to eq(["https://www.googleapis.com/auth/devstorage.read_only"])
+    end
+
+    it "attaches the network tags" do
+      expect(payload.tags.items).to eq(%w{web db})
+    end
+
+    it "attaches the labels" do
+      expect(payload.labels).to eq("team" => "platform")
+    end
+
+    context "with no service account scopes" do
+      let(:driver_config) { { service_account_scopes: [] } }
+
+      it "attaches no service account at all" do
+        expect(payload.service_accounts).to be_nil
+      end
     end
   end
 
@@ -382,6 +444,16 @@ RSpec.describe Kitchen::Driver::Gce, "instance payload" do
       let(:driver_config) { { service_account_scopes: [] } }
 
       it "is nil" do
+        expect(driver.instance_service_accounts).to be_nil
+      end
+    end
+
+    # `service_account_scopes:` written bare in kitchen.yml parses to nil
+    # rather than to an empty array, and nil has no #empty?.
+    context "with the scope list present but empty in kitchen.yml" do
+      let(:driver_config) { { service_account_scopes: nil } }
+
+      it "is nil rather than raising" do
         expect(driver.instance_service_accounts).to be_nil
       end
     end

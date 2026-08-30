@@ -93,6 +93,23 @@ RSpec.describe Kitchen::Driver::Gce, "disk construction" do
           .to eq("projects/test-project/zones/test-zone-1a/disks/tk-test-1-data")
       end
 
+      # A standalone disk is not removed with the instance unless the
+      # attachment says so, so an unsent autoDelete leaves it billing after
+      # `kitchen destroy` has reported success.
+      it "auto-deletes the standalone disk with the instance" do
+        expect(built_disks.last.auto_delete).to be(true)
+      end
+
+      context "with autodelete_disk disabled on it" do
+        let(:driver_config) do
+          { disks: { boot: { boot: true }, data: { disk_size: 50, autodelete_disk: false } } }
+        end
+
+        it "leaves the standalone disk behind" do
+          expect(built_disks.last.auto_delete).to be(false)
+        end
+      end
+
       it "waits for the standalone disk to become READY" do
         expect(compute).to receive(:get_disk).at_least(:once).and_return(ComputeApi.disk(status: "READY"))
 
@@ -236,6 +253,63 @@ RSpec.describe Kitchen::Driver::Gce, "disk construction" do
 
         it "honours the requested size" do
           expect(built_disks.first.initialize_params.disk_size_gb).to eq(100)
+        end
+      end
+
+      # `disk_size:` written bare in kitchen.yml parses to nil rather than to
+      # the default, so the comparison has to cope with having no size at all.
+      context "and the size was left empty in kitchen.yml" do
+        let(:driver_config) { { disks: { disk1: { boot: true, disk_size: nil } } } }
+
+        it "sizes the boot disk to the image rather than raising" do
+          expect(built_disks.first.initialize_params.disk_size_gb).to eq(50)
+        end
+      end
+
+      # The boundary: a request that exactly matches the image is already
+      # legal, so it must be sent unchanged and without a warning.
+      context "and exactly the image's size was requested" do
+        let(:driver_config) { { disks: { disk1: { boot: true, disk_size: 50 } } } }
+
+        it "honours the requested size" do
+          expect(built_disks.first.initialize_params.disk_size_gb).to eq(50)
+        end
+
+        it "does not claim the request was too small" do
+          built_disks
+
+          expect(log).not_to include("smaller than image")
+        end
+      end
+    end
+
+    describe "reading the image's size" do
+      # The boot image is looked up more than once during a single create --
+      # once to validate it, once to size the disk from it.
+      it "asks GCE for an image's size only once" do
+        expect(compute).to receive(:get_image).at_most(:once).and_return(ComputeApi.image)
+
+        driver.image_disk_size_gb("test-image")
+        driver.image_disk_size_gb("test-image")
+      end
+
+      it "has no size to report for no image" do
+        expect(driver.image_disk_size_gb(nil)).to be_nil
+      end
+
+      # A size that cannot be read is not a reason to fail the run: the
+      # requested size is sent as-is and GCE decides.
+      context "when the image lookup fails" do
+        before { allow(compute).to receive(:get_image).and_raise(ComputeApi.client_error) }
+
+        it "reports no size rather than raising" do
+          expect(driver.image_disk_size_gb("test-image")).to be_nil
+        end
+
+        it "says why in the debug log" do
+          driver.image_disk_size_gb("test-image")
+
+          expect(log).to include("Unable to read the size of image test-image")
         end
       end
     end

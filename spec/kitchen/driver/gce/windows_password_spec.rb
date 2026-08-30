@@ -82,27 +82,68 @@ RSpec.describe Kitchen::Driver::Gce::WindowsPassword do
       expect(winpass.new_password).to eq("pässwörd-✓")
     end
 
+    # The port is scanned newest line first, so the noise that has to be
+    # survived is the noise *after* the response: those are the lines actually
+    # parsed on the way back to it. Noise before it is never even read.
     it "ignores serial port noise surrounding the response" do
       serial_port_returns(
         "SeaBIOS (version 1.8.9-google)",
-        "not json at all {{{",
-        "12345",
-        '{"unrelated":"event"}',
         agent_response(password: "found-me").to_json,
+        "not json at all {{{",
+        '{"unrelated":"event"}',
         "Booting from Hard Disk..."
       )
 
       expect(winpass.new_password).to eq("found-me")
     end
 
+    # A bare scalar parses as valid JSON but is not a Hash, so indexing it for
+    # a modulus raises TypeError rather than simply failing to match.
+    it "skips a line that is valid JSON but not an object" do
+      serial_port_returns(
+        agent_response(password: "found-me").to_json,
+        "12345",
+        '"a bare string"',
+        "null"
+      )
+
+      expect(winpass.new_password).to eq("found-me")
+    end
+
+    # Newest last, so the stale response is the one examined first. Were the
+    # key check dropped, this would decrypt to the stale entry's password.
     it "ignores a response generated for a different key" do
       other_key = OpenSSL::PKey::RSA.new(2048)
-      stale = agent_response.merge(
+      stale = agent_response(password: "not-mine").merge(
         "modulus" => Base64.strict_encode64(other_key.public_key.n.to_s(2))
       )
-      serial_port_returns(stale.to_json, agent_response(password: "mine").to_json)
+      serial_port_returns(agent_response(password: "mine").to_json, stale.to_json)
 
       expect(winpass.new_password).to eq("mine")
+    end
+
+    # Same again for the exponent half of the pair, which is the easier of the
+    # two to drop by accident because every RSA key here shares one.
+    it "ignores a response whose exponent does not match" do
+      stale = agent_response(password: "not-mine").merge(
+        "exponent" => Base64.strict_encode64(OpenSSL::BN.new(3).to_s(2))
+      )
+      serial_port_returns(agent_response(password: "mine").to_json, stale.to_json)
+
+      expect(winpass.new_password).to eq("mine")
+    end
+
+    it "reads the serial port the Windows agent writes to" do
+      expect(compute).to receive(:get_instance_serial_port_output)
+        .with("test-project", "test-zone-1a", "tk-win-1", port: described_class::SERIAL_PORT)
+        .and_return(
+          instance_double(
+            Google::Apis::ComputeV1::SerialPortOutput,
+            contents: agent_response(password: "on-port-4").to_json
+          )
+        )
+
+      expect(winpass.new_password).to eq("on-port-4")
     end
 
     it "raises when the agent reports it could not reset the password" do
@@ -187,6 +228,21 @@ RSpec.describe Kitchen::Driver::Gce::WindowsPassword do
 
     it "names the account to reset" do
       expect(request["userName"]).to eq("Administrator")
+    end
+
+    # Google's images ship the built-in Administrator disabled and the agent
+    # will not enable it, so a configured username reaching the agent
+    # unchanged is what makes a Windows suite work at all.
+    context "with an account other than the built-in Administrator" do
+      subject(:winpass) do
+        described_class.new(
+          driver, instance_name: "tk-win-1", email: "user@example.com", username: "kitchen"
+        )
+      end
+
+      it "asks the agent to reset that account instead" do
+        expect(request["userName"]).to eq("kitchen")
+      end
     end
 
     it "carries the requesting user's email" do
