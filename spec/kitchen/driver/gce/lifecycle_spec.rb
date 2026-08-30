@@ -56,6 +56,45 @@ RSpec.describe Kitchen::Driver::Gce do
       driver.create(server_name: "already-created")
     end
 
+    # The instance name is budgeted against the longest configured disk name,
+    # so the disk configuration has to be settled before the name is generated.
+    # Only a create can catch a reordering: `generate_server_name` called on
+    # its own is always handed a config that has already been normalised.
+    # The default disk configuration is the case that matters: `config[:disks]`
+    # is nil until `create_disks_config` fills it in, so a name generated first
+    # is budgeted against no disk name at all.
+    context "with names that only fit if the disks are configured first" do
+      let(:kitchen_instance_name) { "long-suite-name-to-overflow-disk-naming-ubuntu-2204" }
+
+      it "sends no disk name longer than GCE allows" do
+        disk_names = created_instance_payload.disks.map { |d| d.initialize_params.disk_name }.compact
+
+        expect(disk_names).not_to be_empty
+        expect(disk_names.map(&:length))
+          .to all(be <= Kitchen::Driver::Gce::MAX_INSTANCE_NAME_LENGTH)
+      end
+    end
+
+    # update_windows_password is covered on its own in windows_spec.rb; what
+    # this adds is that a create actually calls it, without which a Windows
+    # suite comes up and then fails WinRM auth with no password in state.
+    context "with a WinRM transport" do
+      let(:transport_name) { "winrm" }
+      let(:transport_username) { "kitchen" }
+      let(:driver_config) { { email: "user@example.com" } }
+
+      it "resets the Windows password and records it in the state file" do
+        allow_successful_create
+        allow(Kitchen::Driver::Gce::WindowsPassword).to receive(:new).and_return(
+          instance_double(Kitchen::Driver::Gce::WindowsPassword, new_password: "s3cret")
+        )
+
+        driver.create(state)
+
+        expect(state[:password]).to eq("s3cret")
+      end
+    end
+
     context "when use_private_ip is set" do
       let(:driver_config) { { use_private_ip: true } }
 
@@ -217,6 +256,23 @@ RSpec.describe Kitchen::Driver::Gce do
       expect(compute).not_to receive(:delete_instance)
 
       driver.destroy({})
+    end
+
+    # An instance holds its disks until it is gone, so deleting them first
+    # fails and leaves them behind, billing.
+    it "deletes the instance before the disks it is holding" do
+      order = []
+      allow(compute).to receive(:get_instance).and_return(ComputeApi.instance)
+      allow(compute).to receive(:get_disk).and_return(ComputeApi.disk)
+      allow(compute).to receive(:get_zone_operation).and_return(ComputeApi.operation)
+      allow(compute).to receive(:delete_instance) { order << :instance; ComputeApi.operation }
+      allow(compute).to receive(:delete_disk) { order << :disk; ComputeApi.operation }
+
+      driver.destroy(
+        server_name: "tk-test-1", zone: "test-zone-1a", created_disks: ["tk-test-1-data"]
+      )
+
+      expect(order).to eq(%i{instance disk})
     end
 
     it "deletes the instance and clears the state file" do
@@ -426,6 +482,27 @@ RSpec.describe Kitchen::Driver::Gce do
 
         it "leaves room for that one too" do
           expect("#{generated_name}-a-rather-long-disk-name".length)
+            .to be <= Kitchen::Driver::Gce::MAX_INSTANCE_NAME_LENGTH
+        end
+      end
+
+      # The budget is inclusive: a name exactly as long as it allows is legal,
+      # and only one character more has to give way to the fallback. Off by one
+      # in either direction is a 64-character disk name or a Test Kitchen name
+      # discarded for no reason.
+      context "with a name exactly as long as the budget allows" do
+        let(:kitchen_instance_name) { "a" * 47 }
+
+        it "keeps the Test Kitchen name" do
+          expect(generated_name).to match(/\Atk-a{47}-[0-9a-f]{6}\z/)
+        end
+      end
+
+      context "with a name one character longer than the budget allows" do
+        let(:kitchen_instance_name) { "a" * 48 }
+
+        it "gives way to the fallback so the disk name still fits" do
+          expect("#{generated_name}-disk1".length)
             .to be <= Kitchen::Driver::Gce::MAX_INSTANCE_NAME_LENGTH
         end
       end

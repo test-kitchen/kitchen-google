@@ -203,6 +203,20 @@ RSpec.describe Kitchen::Driver::Gce, "configuration validation" do
         end
       end
 
+      # GCE will not live-migrate an instance with a GPU attached, so the
+      # driver turns auto-migrate off whatever the user asked for.
+      context "with guest accelerators and auto-migrate left on" do
+        let(:driver_config) do
+          { guest_accelerators: [{ type: "nvidia-tesla-t4", count: 1 }], auto_migrate: true }
+        end
+
+        it "warns that auto-migrate is disabled" do
+          driver.validate!
+
+          expect(log).to include("Auto-migrate disabled for instance with guest accelerators")
+        end
+      end
+
       context "with a WinRM transport logging in as the built-in Administrator" do
         let(:transport_name) { "winrm" }
         let(:transport_username) { "Administrator" }
