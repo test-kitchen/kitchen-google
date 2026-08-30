@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [3.1.1](https://github.com/test-kitchen/kitchen-google/compare/v3.1.0...v3.1.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* track created disks in the state file so an interrupt cannot orphan them ([#160](https://github.com/test-kitchen/kitchen-google/issues/160)) ([913eb59](https://github.com/test-kitchen/kitchen-google/commit/913eb5927f86dd8c8feb206d86f821d7db65a1c8))
+
 ## [3.1.0](https://github.com/test-kitchen/kitchen-google/compare/v3.0.3...v3.1.0) (2026-08-23)
 
 
