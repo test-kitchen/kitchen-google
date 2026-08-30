@@ -44,6 +44,12 @@ module Kitchen
       # @return [Hash] the Test Kitchen state hash for the action in progress
       attr_accessor :state
 
+      # @!method state=(value)
+      #   Stores the Test Kitchen state hash for the action in progress.
+      #
+      #   @param value [Hash] the state hash to expose to the helper methods
+      #   @return [Hash] the assigned state hash
+
       # Maps the short scope aliases accepted by `gcloud` onto the scope
       # segment of their fully-qualified OAuth 2.0 URL.
       #
@@ -182,7 +188,8 @@ module Kitchen
       # before the error is re-raised.
       #
       # @param state [Hash] the Test Kitchen state hash, mutated in place with
-      #   `:server_name`, `:hostname` and `:zone`
+      #   `:server_name`, `:hostname`, `:zone` and `:created_disks`, plus
+      #   `:password` for Windows guests
       # @return [void]
       # @raise [StandardError] if instance creation fails for any reason
       def create(state)
@@ -402,8 +409,9 @@ module Kitchen
       #
       # @param disks [Hash] the raw `disks` configuration, keyed by disk name
       # @return [Hash{Symbol => Hash}] the normalised disk configuration
-      # @raise [RuntimeError] if a disk name or type is invalid, or more than
-      #   one boot disk is specified
+      # @raise [RuntimeError] if a disk name or type is invalid, if more than
+      #   one boot disk is specified, or if {#assign_boot_disk} finds no disks
+      #   at all and none eligible to boot
       # @api private
       def normalize_disks(disks)
         normalized = disks.each_with_object({}) do |(disk_name, disk_config), memo|
@@ -493,7 +501,8 @@ module Kitchen
       #
       # @return [void]
       # @raise [RuntimeError] if any configured project, zone, region, machine
-      #   type, network, subnet, image or disk setting is invalid
+      #   type, network, subnet, image or disk setting is invalid, or if the
+      #   WinRM transport is in use without `email` set
       def validate!
         raise "Project #{config[:project]} is not a valid project" unless valid_project?
         raise "Either zone or region must be specified" unless config[:zone] || config[:region]
@@ -537,7 +546,8 @@ module Kitchen
 
       # Application default credentials scoped for Compute Engine.
       #
-      # @return [Google::Auth::Credentials] the resolved credentials
+      # @return [Signet::OAuth2::Client] the resolved application default
+      #   credentials
       def authorization
         @authorization ||= Google::Auth.get_application_default(
           [
@@ -590,6 +600,7 @@ module Kitchen
       # Runs an API call and reports whether it succeeded, swallowing client
       # errors so callers can use it as a validity predicate.
       #
+      # @param block [Proc] the API call to attempt, called with no arguments
       # @yield the API call to attempt
       # @return [Boolean] true if the call succeeded, false on a client error
       def check_api_call(&block)
@@ -883,7 +894,8 @@ module Kitchen
       # what let a perfectly legal instance name produce an illegal disk name.
       #
       # @return [Integer] the maximum length of a generated instance name
-      # @raise [RuntimeError] if a configured disk name leaves no room at all
+      # @raise [RuntimeError] if a configured disk name is long enough that
+      #   fewer than {#fallback_server_name_length} characters remain
       # @api private
       def max_server_name_length
         limit = MAX_INSTANCE_NAME_LENGTH - longest_disk_name_suffix
@@ -1210,7 +1222,8 @@ module Kitchen
       # The instance metadata: the driver's own keys, overlaid with any the
       # user configured, plus a WinRM bootstrap script for Windows guests.
       #
-      # @return [Hash{String => String}] the metadata
+      # @return [Hash{String => Object}] the metadata, string-keyed; user
+      #   values keep whatever type `kitchen.yml` gave them
       def metadata
         default_metadata = {
           "created-by" => "test-kitchen",
@@ -1432,6 +1445,7 @@ module Kitchen
       # logging each status change.
       #
       # @param requested_status [String] the status to wait for
+      # @param block [Proc] called once per poll to re-fetch the resource
       # @yieldreturn [#status] the resource to poll
       # @return [void]
       # @raise [Timeout::Error] if the status is not reached within {#wait_time}
