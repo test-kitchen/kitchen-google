@@ -13,3 +13,11 @@ end
 group :docs do
   gem "yard"
 end
+
+# Only needed to run the suites in integration/, which create real GCE
+# instances. `bundle install --without integration` skips them.
+group :integration do
+  gem "winrm", "~> 2.3"
+  gem "winrm-elevated", "~> 1.2"
+  gem "winrm-fs", "~> 1.3"
+end
