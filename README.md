@@ -9,6 +9,19 @@ Compared to other IaaS providers, GCE offers fast instance launch times and sub-
 
 > This documentation uses [Cinc Workstation](https://cinc.sh/) and the `cinc` commands throughout. Everything here works identically with Chef Workstation — see [Using with Chef](#using-with-chef).
 
+## Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Authentication](#authentication)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+- [Using with Chef](#using-with-chef)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Requirements
 
 - Ruby 3.1 or later (already satisfied if you use Cinc Workstation)
@@ -432,6 +445,132 @@ driver:
     - type: nvidia-tesla-t4
       count: 1
 ```
+
+## Troubleshooting
+
+Almost every failure below is reported by the driver before it creates
+anything, so nothing is billing while you work out what is wrong.
+
+**`Project my-project is not a valid project`.** Usually credentials rather
+than the project name: the driver cannot see a project it is not authorised
+for, and reports that the same way as one that does not exist. Check with
+`gcloud auth application-default print-access-token`, then confirm the Compute
+Engine API is enabled on the project:
+
+```sh
+gcloud services enable compute.googleapis.com --project my-gcp-project
+```
+
+**`Either zone or region must be specified`.** Neither has a default. Set
+`zone` for a specific zone, or `region` to let the driver pick a zone that is
+up. `region: any` was removed.
+
+**`Either image family or name must be specified`.** Same again — set
+`image_family` for the current image in a family, or `image_name` to pin one
+exactly.
+
+**`Image family ubuntu-2204-lts is not valid - it was not found in project
+my-gcp-project`.** The family exists, but not in the project the driver
+searched. Public images live in their own projects, so `image_project` is
+almost always needed alongside `image_family`:
+
+```yaml
+driver:
+  image_family: ubuntu-2204-lts
+  image_project: ubuntu-os-cloud   # not your own project
+```
+
+`gcloud compute images list` shows which project owns each family. The same
+applies to `custom_image` on a non-boot disk, which is resolved in
+`image_project` too — so if you boot from a public image, your own images are
+not visible to it.
+
+**`Machine type e2-medium is not valid`.** Machine types are per-zone, and not
+every family exists in every zone. `gcloud compute machine-types list --zones
+us-central1-a` lists the ones you can actually use.
+
+**`Disk type pd-standard for disk boot is not valid`, or a create that fails
+on `diskType`.** Disk types are per-zone as well, and newer machine series
+reject the older ones outright. Leave `disk_type` unset unless you need
+something specific — see [Disk types and machine
+series](#disk-types-and-machine-series).
+
+**`Instance name ... is not valid`.** GCE names must start with a lowercase
+letter and end with a lowercase letter or a digit. The driver folds case and
+substitutes anything else, but it cannot fix a name that starts with a digit or
+an underscore. This comes from `inst_name`, or from a suite or platform name
+that begins with something GCE will not accept.
+
+**`Disk name ... is too long`.** Disk names are `<instance name>-<disk name>`
+and share the same 63-character budget, so a long key under `disks:` leaves no
+room for the instance name. Shorten the disk name.
+
+**`Unable to find a suitable zone in us-central1`.** No zone in the region
+reported itself as `UP`. Check the region name, and
+[Google Cloud status](https://status.cloud.google.com/).
+
+**Quota errors on create.** `Quota 'CPUS' exceeded` and friends come back from
+GCE, not from the driver. Quotas are per-region: check
+`gcloud compute regions describe us-central1`, and remember that a failed run
+that was interrupted may still be holding instances.
+
+**`kitchen create` hangs at "Waiting for server to be ready".** The instance is
+running and the transport cannot reach it. In order of likelihood:
+
+- **A firewall rule.** The default VPC allows SSH and RDP but not WinRM. Add a
+  rule for TCP 5985 and tag the instances — see [Windows](#windows).
+- **`use_private_ip: true` from outside the network.** There is no route to the
+  internal address unless you are on the VPC or behind a VPN.
+- **OS Login.** If the project or the instance enforces it, keys published as
+  `ssh-keys` metadata are ignored. Either grant the account
+  `roles/compute.osLogin` and let `gcloud compute ssh` provision it, or set
+  `enable-oslogin: "FALSE"` in the instance `metadata`.
+
+The wait itself belongs to the transport, not to `wait_time` — see
+[Timing](#timing). Lowering `max_wait_until_ready` turns a ten-minute hang into
+a two-minute failure while you work out which of the three it is.
+
+**`WinRM::WinRMAuthorizationError` on a Windows platform.** The transport is
+connecting as `Administrator`, which Google's images ship disabled. The guest
+agent resets its password without enabling it, so the login is refused. Set
+`transport.username` to anything else and the agent creates that account
+instead. The driver warns about this before it creates the instance.
+
+**`Timed out after 120 seconds waiting for the GCE agent to reset the
+password`.** The in-guest agent never answered on the serial port. Windows
+images take several minutes to first boot, so raise `winpass_timeout`. If it
+still times out, the image probably has no guest agent — use one from
+`windows-cloud` rather than a custom image built without it.
+
+**`Request did not complete in 600 seconds`.** A GCE operation did not finish
+within `wait_time`. The operation is still running on Google's side, so look at
+the instance in the Cloud Console before retrying.
+
+**Instances or disks left behind after an interrupted run.** `Ctrl-C` raises
+`Interrupt`, which is not a `StandardError`, so the driver's own cleanup does
+not run. It records what it created in the state file first, precisely so that
+a follow-up `kitchen destroy` can find it:
+
+```sh
+cinc kitchen destroy
+```
+
+If the state file is gone too, the driver stamps `created-by: test-kitchen`
+into every instance's metadata, so they can be found and removed by hand:
+
+```sh
+gcloud compute instances list --filter="metadata.items.key=created-by AND metadata.items.value=test-kitchen"
+gcloud compute disks list --filter="-users:*"
+```
+
+**Anything else.** Run with `-l debug`:
+
+```sh
+cinc kitchen create default-ubuntu-2204 -l debug
+```
+
+The debug log records every API call the driver makes and the error the Google
+client returned, which is usually enough to see what GCE actually objected to.
 
 ## Using with Chef
 
