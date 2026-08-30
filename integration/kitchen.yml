@@ -1,0 +1,193 @@
+---
+# Integration suites for kitchen-google. Each one creates a real GCE instance
+# and asserts, from inside the guest, that the driver configured it the way the
+# suite asked for.
+#
+# See integration/README.md for how to run these.
+
+driver:
+  name: gce
+  project: <%= ENV["GCE_PROJECT"] %>
+  zone: <%= ENV.fetch("KITCHEN_GCE_ZONE", "us-central1-a") %>
+  machine_type: e2-small
+  labels:
+    created-by: kitchen-google-integration
+    run-id: <%= ENV.fetch("KITCHEN_RUN_ID", "local") %>
+  tags:
+    - kitchen-google-integration
+  # kitchen-google does not manage SSH keys, so the public half of the key the
+  # transport connects with has to reach the instance as metadata. This is also
+  # a live check that user metadata survives the merge with the driver's own.
+  metadata:
+    ssh-keys: <%= "#{ENV.fetch("KITCHEN_GCE_USER", "kitchen")}:#{File.read(File.expand_path("#{ENV.fetch("KITCHEN_SSH_KEY", "~/.ssh/id_kitchen_gce")}.pub")).strip}" %>
+
+# Assertions live in the provisioner rather than a verifier: the script is
+# transferred over the driver's own transport and run on the instance, so
+# reaching the machine at all is part of every assertion, and a non-zero exit
+# fails the suite. It also keeps the suites free of a verifier licence.
+provisioner:
+  name: shell
+
+verifier:
+  name: shell
+  command: echo "assertions run in the provisioner"
+
+transport:
+  name: ssh
+  username: <%= ENV.fetch("KITCHEN_GCE_USER", "kitchen") %>
+  ssh_key: <%= ENV.fetch("KITCHEN_SSH_KEY", "~/.ssh/id_kitchen_gce") %>
+  # An instance that can never be reached should fail in a couple of minutes,
+  # not after the ten-minute default.
+  max_wait_until_ready: 300
+
+platforms:
+  - name: ubuntu-2204
+    driver:
+      image_family: ubuntu-2204-lts
+      image_project: ubuntu-os-cloud
+
+  # Rocky's image is 20 GB, which is larger than the driver's own 10 GB default.
+  # That is the whole point of the boot-disk-size suite.
+  - name: rockylinux-9
+    driver:
+      image_family: rocky-linux-9
+      image_project: rocky-linux-cloud
+
+  - name: windows-2022
+    driver:
+      image_family: windows-2022
+      image_project: windows-cloud
+      machine_type: e2-standard-2
+      email: <%= ENV.fetch("KITCHEN_GCE_EMAIL", "kitchen@example.com") %>
+    transport:
+      name: winrm
+      # Never "administrator": Google's Windows images ship that account
+      # disabled and the guest agent will not enable it.
+      username: kitchen
+      elevated: true
+      max_wait_until_ready: 600
+
+suites:
+  # The ordinary path: image family, a single boot disk, an external IP.
+  - name: default
+    includes: [ubuntu-2204]
+    provisioner:
+      script: scripts/baseline.sh
+
+  # No zone at all, so the driver has to list the region's zones and pick a
+  # live one. The script asserts the instance really did land in that region.
+  - name: region
+    includes: [ubuntu-2204]
+    driver:
+      zone: ~
+      region: <%= ENV.fetch("KITCHEN_GCE_REGION", "us-central1") %>
+      metadata:
+        kitchen-expected-region: <%= ENV.fetch("KITCHEN_GCE_REGION", "us-central1") %>
+    provisioner:
+      script: scripts/region.sh
+
+  # An extra persistent disk, which the driver creates standalone and attaches,
+  # rather than inline with the instance.
+  - name: extra-disk
+    includes: [ubuntu-2204]
+    driver:
+      disks:
+        boot:
+          boot: true
+          disk_size: 15
+        data:
+          disk_size: 25
+          disk_type: pd-balanced
+    provisioner:
+      script: scripts/extra_disk.sh
+
+  # Local SSD scratch space, which is attached as a SCRATCH disk with no size
+  # and no source image. E2 machine types cannot carry one.
+  - name: local-ssd
+    includes: [ubuntu-2204]
+    driver:
+      machine_type: n1-standard-1
+      disks:
+        boot:
+          boot: true
+        scratch:
+          disk_type: local-ssd
+    provisioner:
+      script: scripts/local_ssd.sh
+
+  # The deprecated top-level disk options, which are still supported and still
+  # have to produce a working boot disk.
+  - name: legacy-disk
+    includes: [ubuntu-2204]
+    driver:
+      disk_size: 20
+      disk_type: pd-balanced
+      autodelete_disk: true
+    provisioner:
+      script: scripts/boot_disk_size.sh
+
+  # A 10 GB request against a 20 GB image. GCE refuses to clone an image into a
+  # disk smaller than itself, so the driver has to raise the request instead of
+  # failing the run.
+  - name: boot-disk-size
+    includes: [rockylinux-9]
+    driver:
+      disks:
+        boot:
+          boot: true
+          disk_size: 10
+    provisioner:
+      script: scripts/boot_disk_size.sh
+
+  # Metadata, labels, tags and service account scopes, all read back from the
+  # instance's own metadata server.
+  - name: metadata
+    includes: [ubuntu-2204]
+    driver:
+      metadata:
+        kitchen-integration: metadata-suite
+      labels:
+        suite: metadata
+      tags:
+        - kitchen-google-integration
+        - kitchen-metadata-suite
+      service_account_scopes:
+        - storage-ro
+        - logging-write
+    provisioner:
+      script: scripts/metadata.sh
+
+  # Preemptible instances, which GCE will neither live-migrate nor auto-restart
+  # whatever the driver is asked for.
+  - name: preemptible
+    includes: [ubuntu-2204]
+    driver:
+      preemptible: true
+      auto_restart: true
+      auto_migrate: true
+    provisioner:
+      script: scripts/preemptible.sh
+
+  # A suite name long enough that "tk-<suite>-<platform>-<hex>" will not fit
+  # once the longest disk name is reserved out of the 63-character budget, so
+  # the driver has to fall back to a UUID name. A disk name that overflows is
+  # the failure this covers: it produced a legal instance name and an illegal
+  # disk name.
+  - name: long-instance-and-disk-names
+    includes: [ubuntu-2204]
+    driver:
+      disks:
+        boot:
+          boot: true
+        data-disk-long-enough:
+          disk_size: 10
+    provisioner:
+      script: scripts/long_names.sh
+
+  # The Windows path: the guest agent resets the password for a non-builtin
+  # account over the serial port, and the driver's startup script opens WinRM
+  # inside the guest.
+  - name: windows
+    includes: [windows-2022]
+    provisioner:
+      script: scripts/windows.ps1

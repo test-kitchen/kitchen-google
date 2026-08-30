@@ -1,0 +1,122 @@
+---
+name: 'Integration Tests'
+
+# These create real instances and real disks in a real GCP project, so they are
+# never run automatically on a pull request: secrets are not available to forks,
+# and every run costs money. Maintainers trigger them by hand, and they run
+# weekly against main so that a GCE-side change is noticed before a release.
+'on':
+  workflow_dispatch:
+    inputs:
+      suites:
+        description: "Regexp of suites to run, e.g. 'default|windows'. Empty runs all of them."
+        required: false
+        default: ""
+  schedule:
+    - cron: "0 5 * * 1"
+
+# A project has a finite CPU quota per region. Two runs at once exhaust it and
+# both fail, so let an in-flight run finish rather than cancelling it.
+concurrency:
+  group: gce-integration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GCE_PROJECT: ${{ secrets.GCE_PROJECT }}
+      KITCHEN_GCE_ZONE: ${{ vars.KITCHEN_GCE_ZONE || 'us-central1-a' }}
+      KITCHEN_GCE_REGION: ${{ vars.KITCHEN_GCE_REGION || 'us-central1' }}
+      KITCHEN_GCE_EMAIL: ${{ secrets.GCE_SERVICE_ACCOUNT }}
+      KITCHEN_SSH_KEY: ${{ github.workspace }}/.ssh/id_kitchen_gce
+      KITCHEN_RUN_ID: ${{ github.run_id }}
+    steps:
+      # Fail immediately, and legibly, rather than after a checkout and a
+      # bundle install, if the repository has not been configured for this.
+      - name: Check the project is configured
+        run: |
+          set -eu
+          if [ -z "${GCE_PROJECT}" ]; then
+            echo "::error::The GCE_PROJECT secret is not set - see integration/README.md"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      # Workload identity federation exchanges GitHub's OIDC token for Google
+      # credentials, so no service account key is stored anywhere. The driver
+      # picks the result up as Application Default Credentials.
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCE_PROJECT }}
+          workload_identity_provider: ${{ secrets.GCE_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCE_SERVICE_ACCOUNT }}
+
+      - name: Install the gcloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      # The driver does not manage SSH keys. The public half travels to the
+      # instance as metadata; see integration/kitchen.yml.
+      - name: Generate an SSH key for the run
+        run: |
+          set -eu
+          mkdir -p "$(dirname "${KITCHEN_SSH_KEY}")"
+          ssh-keygen -t ed25519 -N "" -C "kitchen-google-integration" -f "${KITCHEN_SSH_KEY}"
+
+      # Nothing in the default VPC allows WinRM, and the driver cannot open it:
+      # its startup script runs inside the guest. Without this the windows suite
+      # waits out its timeout on a running instance.
+      - name: Ensure the WinRM firewall rule exists
+        run: |
+          set -eu
+          gcloud compute firewall-rules describe kitchen-google-integration-winrm \
+            --project "${GCE_PROJECT}" >/dev/null 2>&1 && exit 0
+          gcloud compute firewall-rules create kitchen-google-integration-winrm \
+            --project "${GCE_PROJECT}" \
+            --allow tcp:5985 \
+            --target-tags kitchen-google-integration \
+            --source-ranges 0.0.0.0/0
+
+      # Via the environment rather than inline, so the input cannot be read as
+      # part of the command line.
+      - name: Run the integration suites
+        working-directory: integration
+        env:
+          SUITES: ${{ github.event.inputs.suites }}
+        run: bundle exec kitchen test "${SUITES}" --concurrency 4
+
+      # Destroy runs whatever happened above. A suite that leaks an instance on
+      # failure turns a red build into a recurring bill.
+      - name: Destroy everything
+        if: always()
+        working-directory: integration
+        run: bundle exec kitchen destroy --concurrency 4
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitchen-logs
+          path: integration/.kitchen/logs/
+          retention-days: 7
+
+      # Belt and braces: if destroy could not run, say so loudly rather than
+      # leaving instances and disks to be found on the next bill.
+      - name: Warn about anything left behind
+        if: failure()
+        run: |
+          echo "::warning::If 'Destroy everything' did not succeed, look for instances and disks labelled run-id=${KITCHEN_RUN_ID}"

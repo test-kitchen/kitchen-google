@@ -50,14 +50,31 @@ bundle exec cookstyle -a
 The unit tests mock the Google Compute Engine API, so they do not create real
 instances and do not require GCP credentials.
 
-### Manual testing against GCE
+### Integration tests
 
-Changes that touch instance creation should also be exercised against a real
-project, since the unit tests cannot catch API-level regressions. Set up
-[Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials),
-point a `kitchen.yml` at a project you control, and run `kitchen test`.
-Remember that this creates billable resources — confirm the instances are gone
-with `kitchen destroy` and check the GCE console afterwards.
+Mocking the API proves the driver builds the right request, not that GCE accepts
+it. The suites in [`integration/`](integration/README.md) close that gap: each
+one creates a real instance and asserts, from inside the guest, that the driver
+configured it as asked.
+
+```sh
+export GCE_PROJECT=my-gcp-project
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_kitchen_gce
+
+bundle exec rake integration:list
+bundle exec rake integration:test
+bundle exec rake integration:destroy   # after a failed run
+```
+
+They are not part of `bundle exec rake` — they create billable resources — and
+they never run on a pull request. Maintainers run them on demand, and weekly
+against `main`. See [`integration/README.md`](integration/README.md) for what
+each suite covers and how to set the project up.
+
+Changes that touch instance creation should be exercised this way before
+merging, since the unit tests cannot catch an API-level regression. `kitchen
+test` destroys on success but leaves a failed instance running, so confirm with
+`rake integration:destroy` and check the GCE console afterwards.
 
 ## Submitting changes
 
