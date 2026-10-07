@@ -10,3 +10,6 @@ doc/
 
 # RSpec example status persistence
 spec/examples.txt
+
+# Test Kitchen integration run state
+integration/.kitchen/
